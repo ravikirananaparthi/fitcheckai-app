@@ -1,0 +1,14 @@
+export { AIStylistIcon } from './ai-stylist-icon';
+export { AIStylistIconUF } from './ai-stylist-icon-uf';
+export { FavoritesIcon } from './favorites-icon';
+export { FavoritesIconUF } from './favorites-icon-uf';
+export { HomeIcon } from './home-icon';
+export { HomeIconUF } from './home-icon-uf';
+export { MenuIcon } from './menu-icon';
+export { MenuIconUF } from './menu-icon-uf';
+export { SearchIcon } from './search-icon';
+export { SearchIconUF } from './search-icon-uf';
+export { TrendingIcon } from './trending-icon';
+export { TrendingIconUF } from './trending-icon-uf';
+export { WardrobeIcon } from './wardrobe-icon';
+export { WardrobeIconUF } from './wardrobe-icon-uf';

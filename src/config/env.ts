@@ -1,0 +1,18 @@
+// Environment configuration
+// Values are read from .env file (EXPO_PUBLIC_ prefix required)
+// Restart the dev server after changing .env values
+
+export const ENV = {
+    // Old filmy backend (existing features)
+    API_BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'https://filmy-backend.onrender.com/api/v1',
+    DEV_AUTH_TOKEN: process.env.EXPO_PUBLIC_DEV_TOKEN || "eyJhbGciOiJIUzI1NiIsImtpZCI6IldadEJnODcycFR6dElDcXAiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2lkYnh0aHluaXNnd2dua2Rza2dhLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI0NTJjMmI0Yy00OTNkLTRmYzItODgxMy0yNWEwMjZjODk3NDciLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzY4OTEzNjI5LCJpYXQiOjE3NjgzMDg4MjksImVtYWlsIjoiIiwicGhvbmUiOiI5MTkxODI3MjA1OTMiLCJhcHBfbWV0YWRhdGEiOnsicHJvdmlkZXIiOiJwaG9uZSIsInByb3ZpZGVycyI6WyJwaG9uZSJdfSwidXNlcl9tZXRhZGF0YSI6eyJlbWFpbF92ZXJpZmllZCI6ZmFsc2UsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiNDUyYzJiNGMtNDkzZC00ZmMyLTg4MTMtMjVhMDI2Yzg5NzQ3In0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoib3RwIiwidGltZXN0YW1wIjoxNzY4MzA4ODI5fV0sInNlc3Npb25faWQiOiI3ZThiOWQ3MS04ZjVmLTQ3OWUtYjRhOC02NWJmMDc2ODFjY2EiLCJpc19hbm9ueW1vdXMiOmZhbHNlfQ.e8HSk5kDBqE59oASZ4o9lT91KGl-ONNR1t3y7PWhges",
+
+    // FitCheck AI backend — update this when deployed to Railway
+    // Android emulator needs 10.0.2.2 instead of localhost
+    FITCHECK_API_URL: process.env.EXPO_PUBLIC_FITCHECK_API_URL || 'http://localhost:3000/api/v1',
+
+    // Dev user ID — used by backend DevAuthGuard until Phase D (real auth)
+    DEV_USER_ID: process.env.EXPO_PUBLIC_DEV_USER_ID || 'dev-user-001',
+
+    IS_DEV: __DEV__,
+} as const;
