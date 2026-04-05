@@ -12,6 +12,7 @@ import HeroSection from './components/HeroSection';
 import HomeHeader from './components/HomeHeader';
 import RecentFitsSection from './components/RecentFitsSection';
 import TrendingSection from './components/TrendingSection';
+import WeatherOutfitCard from './components/WeatherOutfitCard';
 
 const BG = Theme.colors.background.light;
 
@@ -35,6 +36,7 @@ export default function HomeScreen() {
             >
                 <HeroSection />
                 <ActionButtons />
+                <WeatherOutfitCard />
                 <RecentFitsSection />
                 <DailyStyleTip />
                 <TrendingSection />
