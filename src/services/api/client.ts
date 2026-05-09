@@ -21,6 +21,9 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor - add auth token
 apiClient.interceptors.request.use(
     (config) => {
+        // Dev auth header — identifies the user until Phase D (real auth)
+        config.headers['x-dev-user-id'] = 'dev-user-001';
+
         // For development, use hardcoded token
         const token = ENV.DEV_AUTH_TOKEN;
 
