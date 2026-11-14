@@ -32,7 +32,7 @@ apiClient.interceptors.request.use(
         }
 
         // Log to Reactotron in development
-        if (__DEV__ && Reactotron.display) {
+        if (Reactotron?.display) {
             Reactotron.display({
                 name: '🚀 API REQUEST',
                 preview: `${config.method?.toUpperCase()} ${config.url}`,

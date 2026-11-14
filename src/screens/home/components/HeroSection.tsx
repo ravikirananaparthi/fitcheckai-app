@@ -3,24 +3,24 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import React from "react";
 import {
-  Dimensions,
   Image,
   Platform,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const LIME = Theme.palette.primary;
 const DARK = Theme.palette.surface.dark;
 const TEXT = Theme.colors.text.inverse;
 
-// Circle sizing
-const CIRCLE_SIZE = SCREEN_WIDTH - 48;
 const BORDER_WIDTH = 4;
 
 export default function HeroSection() {
+  const { width } = useWindowDimensions();
+  const circleSize = Math.min(Math.max(width - 48, 280), 520);
+
   return (
     <View style={styles.heroSection}>
       {/* Title — centered */}
@@ -36,7 +36,7 @@ export default function HeroSection() {
 
       {/* Circular CTA Image */}
       <View style={styles.circleContainer}>
-        <View style={styles.circleBorder}>
+        <View style={[styles.circleBorder, { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }]}>
           {/* Outfit photo */}
           <Image
             source={require("@/assets/images/heromg.png")}
@@ -79,7 +79,7 @@ export default function HeroSection() {
 
 const styles = StyleSheet.create({
   heroSection: {
-    alignItems: "flex-start",
+    alignItems: "center",
     paddingTop: 8,
     paddingBottom: 4,
   },
@@ -119,9 +119,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   circleBorder: {
-    width: CIRCLE_SIZE,
-    height: CIRCLE_SIZE,
-    borderRadius: CIRCLE_SIZE / 2,
     borderWidth: BORDER_WIDTH,
     borderColor: "#FFFFFF",
     overflow: "hidden",

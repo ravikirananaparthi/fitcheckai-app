@@ -1,87 +1,42 @@
-import { RefreshProvider, useRefreshContext } from '@/src/contexts/RefreshContext';
-import { AnimatedTabBar } from '@components/ui/animated-tab-bar';
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { MotionifyProvider, MotionifyView } from 'react-native-motionify';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
+import { MotionifyProvider } from 'react-native-motionify';
 
-function TabLayoutContent() {
-  const insets = useSafeAreaInsets();
-  const { triggerRefresh } = useRefreshContext();
-
-  return (
-    <View style={styles.container}>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: styles.hiddenTabBar,
-          lazy: true, // Lazy load inactive tabs
-          freezeOnBlur: true, // Freeze inactive screens to save memory
-        }}
-        tabBar={(props) => (
-          <MotionifyView
-            animatedY
-            hideOn="down"
-            translateRange={{ from: 0, to: 80 }}
-            animationDuration={150}
-            style={styles.tabBarMotionify}
-          >
-            <AnimatedTabBar {...props} onHomeDoubleTap={triggerRefresh} />
-          </MotionifyView>
-        )}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: 'Home',
-          }}
-        />
-        <Tabs.Screen
-          name="ai-stylist"
-          options={{
-            title: 'AI Stylist',
-          }}
-        />
-        <Tabs.Screen
-          name="wardrobe"
-          options={{
-            title: 'Wardrobe',
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: 'Profile',
-          }}
-        />
-      </Tabs>
-    </View>
-  );
-}
+const brandColor = '#A855F7';
 
 export default function TabLayout() {
   return (
-    <RefreshProvider>
-      <MotionifyProvider threshold={10} supportIdle={false}>
-        <TabLayoutContent />
-      </MotionifyProvider>
-    </RefreshProvider>
+    <MotionifyProvider threshold={10} supportIdle={false}>
+      <NativeTabs tintColor={brandColor}>
+        <NativeTabs.Trigger name="index">
+          <Icon
+            sf={{ default: 'house', selected: 'house.fill' }}
+            androidSrc={<VectorIcon family={Ionicons} name="home-outline" />}
+          />
+          <Label>Home</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="ai-stylist">
+          <Icon
+            sf="sparkles"
+            androidSrc={<VectorIcon family={Ionicons} name="sparkles-outline" />}
+          />
+          <Label>AI Stylist</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="wardrobe">
+          <Icon
+            sf={{ default: 'tshirt', selected: 'tshirt.fill' }}
+            androidSrc={<VectorIcon family={Ionicons} name="shirt-outline" />}
+          />
+          <Label>Wardrobe</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="profile">
+          <Icon
+            sf={{ default: 'person', selected: 'person.fill' }}
+            androidSrc={<VectorIcon family={Ionicons} name="person-outline" />}
+          />
+          <Label>Profile</Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    </MotionifyProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  hiddenTabBar: {
-    display: 'none',
-  },
-  tabBarMotionify: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'transparent',
-  },
-});

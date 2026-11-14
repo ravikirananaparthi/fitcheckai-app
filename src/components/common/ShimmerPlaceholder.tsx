@@ -1,7 +1,7 @@
 import { Theme } from '@constants/theme';
 import React, { memo } from 'react';
 import { Dimensions, StyleSheet, useColorScheme, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient';
 import { createShimmerPlaceholder } from 'react-native-shimmer-placeholder';
 
 const ShimmerPlaceholder = createShimmerPlaceholder(LinearGradient);

@@ -12,7 +12,7 @@ import {
     GoogleSansFlex_700Bold,
     useFonts,
 } from '@expo-google-fonts/google-sans-flex';
-import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -55,7 +55,7 @@ export default function RootLayout() {
         <GestureHandlerRootView style={{ flex: 1 }}>
             <SafeAreaProvider>
                 <ApiProvider>
-                    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : undefined}>
+                    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
                         <View style={{ flex: 1, backgroundColor }}>
                             <StatusBar style="dark" backgroundColor={backgroundColor} />
                             <Stack
@@ -65,7 +65,6 @@ export default function RootLayout() {
                                 }}
                             >
                                 <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
-                                <Stack.Screen name="(auth)" options={{ animation: 'slide_from_bottom' }} />
                             </Stack>
                         </View>
                     </ThemeProvider>
