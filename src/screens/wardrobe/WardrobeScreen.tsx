@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity,
+    View, Text, StyleSheet, TouchableOpacity, Platform,
     Image, FlatList, ActivityIndicator, Alert,
     ScrollView, StatusBar, RefreshControl,
 } from 'react-native';
@@ -475,6 +475,7 @@ const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: Theme.colors.background.light,
+        ...Platform.select({ web: { width: '100%', maxWidth: 1000, alignSelf: 'center', paddingTop: 32 } }),
     },
     header: {
         paddingHorizontal: Theme.spacing.md,
@@ -487,12 +488,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 28,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     headerSub: {
         fontSize: 13,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
         marginTop: 1,
     },
     headerActions: {
@@ -554,7 +555,7 @@ const styles = StyleSheet.create({
     catTabText: {
         fontSize: 13,
         fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
     },
     catTabTextActive: {
         color: '#111',
@@ -575,12 +576,12 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 20,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     emptySub: {
         fontSize: 15,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
         textAlign: 'center',
     },
     emptyBtn: {
@@ -625,7 +626,7 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 13,
         fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     catDot: {
         width: 8,
@@ -672,12 +673,12 @@ const styles = StyleSheet.create({
     taggingTitle: {
         fontSize: 18,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     taggingSubtitle: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
         textAlign: 'center',
     },
     confirmCard: {
@@ -710,7 +711,7 @@ const styles = StyleSheet.create({
     confirmLabel: {
         fontSize: 20,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     tagRow: {
         flexDirection: 'row',

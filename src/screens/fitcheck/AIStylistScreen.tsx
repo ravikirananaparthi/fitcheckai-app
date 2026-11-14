@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity,
+    View, Text, StyleSheet, TouchableOpacity, Platform,
     Image, FlatList, ActivityIndicator, Alert, StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -244,7 +244,7 @@ export default function AIStylistScreen() {
 
                 {historyLoading && history.length === 0 && (
                     <View style={styles.loadingHistory}>
-                        <ActivityIndicator size="small" color={Theme.colors.text.secondary} />
+                        <ActivityIndicator size="small" color={(Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary)} />
                     </View>
                 )}
             </Animated.ScrollView>
@@ -256,6 +256,7 @@ const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: Theme.colors.background.light,
+        ...Platform.select({ web: { width: '100%', maxWidth: 1000, alignSelf: 'center', paddingTop: 32 } }),
     },
     header: {
         paddingHorizontal: Theme.spacing.md,
@@ -265,12 +266,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 28,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     headerSub: {
         fontSize: 15,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
         marginTop: 2,
     },
     scroll: {
@@ -291,12 +292,12 @@ const styles = StyleSheet.create({
     uploadTitle: {
         fontSize: 22,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     uploadSubtitle: {
         fontSize: 15,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
         textAlign: 'center',
         lineHeight: 22,
     },
@@ -343,12 +344,12 @@ const styles = StyleSheet.create({
     analyzingTitle: {
         fontSize: 20,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     analyzingSubtitle: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
         textAlign: 'center',
         lineHeight: 20,
     },
@@ -358,7 +359,7 @@ const styles = StyleSheet.create({
     sectionLabel: {
         fontSize: 17,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
     },
     historyList: {
         gap: Theme.spacing.sm,
@@ -388,7 +389,7 @@ const styles = StyleSheet.create({
     historyDate: {
         fontSize: 11,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
     },
     loadingHistory: {
         paddingVertical: Theme.spacing.md,

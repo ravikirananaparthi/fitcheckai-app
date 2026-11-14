@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-    View, Text, StyleSheet, TouchableOpacity,
+    View, Text, StyleSheet, TouchableOpacity, Platform,
     ScrollView, ActivityIndicator, StatusBar, Image,
     RefreshControl,
 } from 'react-native';
@@ -253,11 +253,11 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: Theme.colors.background.light },
+    root: { flex: 1, backgroundColor: Theme.colors.background.light, ...Platform.select({ web: { width: '100%', maxWidth: 1000, alignSelf: 'center', paddingTop: 32 } }) },
     center: { alignItems: 'center', justifyContent: 'center' },
     scroll: { paddingHorizontal: Theme.spacing.md, gap: Theme.spacing.md },
     header: { paddingTop: Theme.spacing.sm },
-    headerTitle: { fontSize: 28, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
+    headerTitle: { fontSize: 28, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary) },
 
     // User card
     userCard: {
@@ -273,9 +273,9 @@ const styles = StyleSheet.create({
     avatarImg: { width: 56, height: 56, borderRadius: 28 },
     avatarInitial: { fontSize: 22, fontFamily: 'GoogleSansFlex_700Bold', color: '#111' },
     userInfo: { flex: 1, gap: 2 },
-    userName: { fontSize: 18, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    userCity: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary },
-    memberSince: { fontSize: 12, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary },
+    userName: { fontSize: 18, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary) },
+    userCity: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary) },
+    memberSince: { fontSize: 12, fontFamily: 'GoogleSansFlex_400Regular', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary) },
     planBadge: {
         paddingHorizontal: 10, paddingVertical: 5, borderRadius: Theme.radius.full,
         backgroundColor: '#F0F0F0', alignSelf: 'flex-start',
@@ -292,8 +292,8 @@ const styles = StyleSheet.create({
         ...Theme.shadows.sm,
     },
     statCard: { flex: 1, alignItems: 'center', gap: 2 },
-    statNumber: { fontSize: 22, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    statLabel: { fontSize: 11, fontFamily: 'GoogleSansFlex_500Medium', color: Theme.colors.text.secondary },
+    statNumber: { fontSize: 22, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary) },
+    statLabel: { fontSize: 11, fontFamily: 'GoogleSansFlex_500Medium', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary) },
     statDivider: { width: 1, height: 32, backgroundColor: '#E8E8E8' },
 
     // Style Persona
@@ -303,13 +303,13 @@ const styles = StyleSheet.create({
         ...Theme.shadows.sm,
     },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    sectionTitle: { fontSize: 14, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.secondary, letterSpacing: 0.5, textTransform: 'uppercase' },
+    sectionTitle: { fontSize: 14, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary), letterSpacing: 0.5, textTransform: 'uppercase' },
     sectionEmoji: { fontSize: 20 },
     personaDot: { width: 10, height: 10, borderRadius: 5 },
     personaBody: { flexDirection: 'row', alignItems: 'center', gap: 14 },
     personaEmoji: { fontSize: 40 },
-    personaLabel: { fontSize: 20, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    personaDesc: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary, lineHeight: 18, marginTop: 2 },
+    personaLabel: { fontSize: 20, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary) },
+    personaDesc: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary), lineHeight: 18, marginTop: 2 },
 
     // Locked persona
     lockedCard: {
@@ -318,8 +318,8 @@ const styles = StyleSheet.create({
         borderWidth: 1, borderColor: '#ECECEC', borderStyle: 'dashed',
     },
     lockedEmoji: { fontSize: 28 },
-    lockedTitle: { fontSize: 14, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    lockedDesc: { fontSize: 12, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary, lineHeight: 17, marginTop: 2 },
+    lockedTitle: { fontSize: 14, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary) },
+    lockedDesc: { fontSize: 12, fontFamily: 'GoogleSansFlex_400Regular', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary), lineHeight: 17, marginTop: 2 },
     progressBar: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: '#E8E8E8', borderBottomLeftRadius: Theme.radius.xl, borderBottomRightRadius: Theme.radius.xl },
     progressFill: { height: 3, backgroundColor: LIME, borderBottomLeftRadius: Theme.radius.xl },
 
@@ -329,8 +329,8 @@ const styles = StyleSheet.create({
         borderRadius: Theme.radius.xl, padding: Theme.spacing.md, gap: 8,
         ...Theme.shadows.sm,
     },
-    colorSeason: { fontSize: 20, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    colorDesc: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary },
+    colorSeason: { fontSize: 20, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary) },
+    colorDesc: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary) },
     swatchRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
     swatch: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, borderColor: '#00000010' },
     retakeBtn: { alignSelf: 'flex-start', marginTop: 4 },
@@ -344,8 +344,8 @@ const styles = StyleSheet.create({
         ...Theme.shadows.sm,
     },
     ctaEmoji: { fontSize: 32 },
-    ctaTitle: { fontSize: 16, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    ctaDesc: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary, lineHeight: 18, marginTop: 2 },
+    ctaTitle: { fontSize: 16, fontFamily: 'GoogleSansFlex_700Bold', color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary) },
+    ctaDesc: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary), lineHeight: 18, marginTop: 2 },
     ctaArrow: { fontSize: 20, color: LIME, fontFamily: 'GoogleSansFlex_700Bold' },
 
     // Preferences
