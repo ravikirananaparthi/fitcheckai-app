@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { fitcheckClient } from './fitcheck-client';
 import type {
     ClothingItem,
@@ -14,18 +15,26 @@ export const getWardrobeItems = async (category?: ClothingCategory): Promise<Clo
     return res.data.data;
 };
 
-// POST /wardrobe/items — upload photo, Gemini auto-tags it
-export const addWardrobeItem = async (imageUri: string, notes?: string): Promise<ClothingItem> => {
+// POST /wardrobe/items — upload and tag a piece
+export const addWardrobeItem = async (
+    imageUri: string, notes?: string, mimeType?: string | null, fileName?: string | null,
+): Promise<ClothingItem> => {
     const formData = new FormData();
-    formData.append('image', {
-        uri: imageUri,
-        name: 'item.jpg',
-        type: 'image/jpeg',
-    } as any);
+    if (Platform.OS === 'web') {
+        const response = await fetch(imageUri);
+        const file = await response.blob();
+        formData.append('image', file, fileName ?? 'item.jpg');
+    } else {
+        formData.append('image', {
+            uri: imageUri,
+            name: fileName ?? 'item.jpg',
+            type: mimeType ?? 'image/jpeg',
+        } as unknown as Blob);
+    }
     if (notes) formData.append('notes', notes);
 
     const res = await fitcheckClient.post<{ data: ClothingItem }>('/wardrobe/items', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': Platform.OS === 'web' ? undefined : 'multipart/form-data' },
     });
     return res.data.data;
 };
