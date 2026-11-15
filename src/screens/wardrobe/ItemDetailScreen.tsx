@@ -1,7 +1,9 @@
+import { fitCheckColors as colors } from '@/constants/fitcheck-colors';
+import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Image, ScrollView, ActivityIndicator, Alert, StatusBar,
+    ScrollView, ActivityIndicator, Alert, StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
@@ -9,7 +11,7 @@ import { Theme } from '@/constants/theme';
 import { getItemCombos } from '@/src/services/api/wardrobe.service';
 import type { ClothingItem, OutfitCombo } from '@/src/types/wardrobe.types';
 
-const LIME = Theme.palette.primary;
+const accent = colors.purple;
 
 const OCCASION_EMOJI: Record<string, string> = {
     CASUAL: '👟',
@@ -79,14 +81,14 @@ export function ItemDetailScreen({ item, onBack, onGetCombos, onArchive }: Props
                     <Image
                         source={{ uri: item.imageUrl }}
                         style={styles.heroImage}
-                        resizeMode="cover"
+                        contentFit="cover"
                     />
 
                     {/* Info card */}
                     <View style={styles.infoCard}>
                         <View style={styles.labelRow}>
                             <Text style={styles.itemLabel}>{item.label}</Text>
-                            <View style={[styles.categoryBadge, { backgroundColor: categoryColor(item.category) }]}>
+                            <View style={styles.categoryBadge}>
                                 <Text style={styles.categoryBadgeText}>{item.category}</Text>
                             </View>
                         </View>
@@ -172,7 +174,7 @@ export function ItemDetailScreen({ item, onBack, onGetCombos, onArchive }: Props
                         activeOpacity={0.85}
                     >
                         {combosLoading ? (
-                            <ActivityIndicator size="small" color="#111" />
+                            <ActivityIndicator size="small" color="#fff" />
                         ) : (
                             <Text style={styles.combosBtnText}>✨ Get AI Outfit Combos</Text>
                         )}
@@ -187,24 +189,13 @@ export function ItemDetailScreen({ item, onBack, onGetCombos, onArchive }: Props
     );
 }
 
-function categoryColor(cat: string): string {
-    const map: Record<string, string> = {
-        TOPS: '#4A9EFF',
-        BOTTOMS: '#9B59B6',
-        SHOES: '#E67E22',
-        ACCESSORIES: '#E91E8C',
-        OUTERWEAR: '#2ECC71',
-        DRESSES: '#F39C12',
-        ACTIVEWEAR: '#1ABC9C',
-        OTHER: '#95A5A6',
-    };
-    return map[cat] ?? '#95A5A6';
-}
-
 const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: Theme.colors.background.light,
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
     },
     topBar: {
         flexDirection: 'row',
@@ -216,7 +207,7 @@ const styles = StyleSheet.create({
     backBtn: {
         fontSize: 16,
         fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.palette.primaryDark,
+        color: colors.purple,
     },
     archiveBtn: {
         fontSize: 15,
@@ -229,12 +220,13 @@ const styles = StyleSheet.create({
     },
     heroImage: {
         width: '100%',
-        aspectRatio: 3 / 4,
+        aspectRatio: 4 / 5,
+        maxHeight: 390,
         borderRadius: Theme.radius.xxl,
-        backgroundColor: Theme.colors.border,
+        backgroundColor: colors.border,
     },
     infoCard: {
-        backgroundColor: Theme.colors.background.surface.light,
+        backgroundColor: colors.surface,
         borderRadius: Theme.radius.xl,
         padding: Theme.spacing.md,
         gap: Theme.spacing.sm,
@@ -251,12 +243,13 @@ const styles = StyleSheet.create({
         flex: 1,
         fontSize: 20,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: colors.ink,
     },
     categoryBadge: {
         paddingHorizontal: 10,
         paddingVertical: 5,
         borderRadius: Theme.radius.full,
+        backgroundColor: colors.purple,
         flexShrink: 0,
     },
     categoryBadgeText: {
@@ -271,7 +264,7 @@ const styles = StyleSheet.create({
     sectionLabel: {
         fontSize: 12,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         letterSpacing: 0.6,
         textTransform: 'uppercase',
     },
@@ -284,7 +277,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingVertical: 5,
         borderRadius: Theme.radius.full,
-        backgroundColor: '#F0F0F0',
+        backgroundColor: colors.tint,
     },
     chipPattern: {
         backgroundColor: '#F3E5F5',
@@ -306,11 +299,11 @@ const styles = StyleSheet.create({
     notesText: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         lineHeight: 20,
     },
     combosBtn: {
-        backgroundColor: LIME,
+        backgroundColor: accent,
         borderRadius: Theme.radius.xl,
         paddingVertical: 16,
         alignItems: 'center',
@@ -320,12 +313,12 @@ const styles = StyleSheet.create({
     combosBtnText: {
         fontSize: 16,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#111',
+        color: '#fff',
     },
     comboHint: {
         fontSize: 12,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         textAlign: 'center',
         marginTop: 6,
     },
