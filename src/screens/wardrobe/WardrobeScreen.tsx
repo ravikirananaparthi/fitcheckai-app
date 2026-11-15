@@ -1,805 +1,306 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-    View, Text, StyleSheet, TouchableOpacity, Platform,
-    Image, FlatList, ActivityIndicator, Alert,
-    ScrollView, StatusBar, RefreshControl,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FontFamily, Theme } from '@/constants/theme';
+import { addWardrobeItem, archiveWardrobeItem, getGapAnalysis, getWardrobeItems } from '@/src/services/api/wardrobe.service';
+import type { ClothingCategory, ClothingItem, OutfitCombo } from '@/src/types/wardrobe.types';
+import { FlashList } from '@shopify/flash-list';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { Theme } from '@/constants/theme';
-import {
-    getWardrobeItems,
-    addWardrobeItem,
-    archiveWardrobeItem,
-    getGapAnalysis,
-} from '@/src/services/api/wardrobe.service';
+import { useLocalSearchParams } from 'expo-router';
+import { Camera, ChevronRight, ImagePlus, Layers, Plus, Shirt, Sparkles } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ItemDetailScreen } from './ItemDetailScreen';
-import { OutfitCombosScreen } from './OutfitCombosScreen';
 import { OutfitBuilderScreen } from './OutfitBuilderScreen';
+import { OutfitCombosScreen } from './OutfitCombosScreen';
 import { SavedOutfitsScreen } from './SavedOutfitsScreen';
-import type { ClothingItem, ClothingCategory, OutfitCombo, GapItem } from '@/src/types/wardrobe.types';
+import { fitCheckColors as colors } from '@/constants/fitcheck-colors';
 
-const LIME = Theme.palette.primary;
+const categories: Record<ClothingCategory, string> = {
+    TOPS: 'Tops', BOTTOMS: 'Bottoms', SHOES: 'Shoes', DRESSES: 'Dresses',
+    OUTERWEAR: 'Outerwear', ACCESSORIES: 'Accessories', ACTIVEWEAR: 'Activewear', OTHER: 'Other',
+};
+const itemsKey = ['wardrobe', 'items'];
+const gapsKey = ['wardrobe', 'gaps'];
 
-const CATEGORIES: { label: string; value: ClothingCategory | 'ALL' }[] = [
-    { label: 'All', value: 'ALL' },
-    { label: 'Tops', value: 'TOPS' },
-    { label: 'Bottoms', value: 'BOTTOMS' },
-    { label: 'Shoes', value: 'SHOES' },
-    { label: 'Dresses', value: 'DRESSES' },
-    { label: 'Outerwear', value: 'OUTERWEAR' },
-    { label: 'Accessories', value: 'ACCESSORIES' },
-    { label: 'Active', value: 'ACTIVEWEAR' },
-];
-
-type ScreenState =
+type Screen =
     | { view: 'grid' }
-    | { view: 'addingItem'; imageUri: string }      // uploading + AI tagging
-    | { view: 'confirmItem'; item: ClothingItem }   // show AI tags, confirm
-    | { view: 'itemDetail'; item: ClothingItem }
+    | { view: 'adding'; uri: string }
+    | { view: 'detail'; item: ClothingItem }
     | { view: 'combos'; item: ClothingItem; combos: OutfitCombo[] }
-    | { view: 'outfitBuilder' }
-    | { view: 'savedOutfits' };
+    | { view: 'builder' }
+    | { view: 'outfits' };
 
 export default function WardrobeScreen() {
+    const { width } = useWindowDimensions();
     const insets = useSafeAreaInsets();
-    const [state, setState] = useState<ScreenState>({ view: 'grid' });
-    const [items, setItems] = useState<ClothingItem[]>([]);
-    const [category, setCategory] = useState<ClothingCategory | 'ALL'>('ALL');
-    const [loading, setLoading] = useState(false);
-    const [refreshing, setRefreshing] = useState(false);
-    const [gaps, setGaps] = useState<GapItem[]>([]);
-    const [gapsLoading, setGapsLoading] = useState(false);
-
-    const loadItems = useCallback(async (cat: ClothingCategory | 'ALL' = category) => {
-        try {
-            setLoading(true);
-            const data = await getWardrobeItems(cat === 'ALL' ? undefined : cat);
-            setItems(data);
-        } catch {
-            // silently fail
-        } finally {
-            setLoading(false);
-        }
-    }, [category]);
-
-    const loadGaps = useCallback(async () => {
-        if (items.length < 5) return;
-        try {
-            setGapsLoading(true);
-            const data = await getGapAnalysis();
-            setGaps(data.gaps ?? []);
-        } catch {
-            // non-critical
-        } finally {
-            setGapsLoading(false);
-        }
-    }, [items.length]);
+    const cache = useQueryClient();
+    const { itemId } = useLocalSearchParams<{ itemId?: string }>();
+    const [screen, setScreen] = useState<Screen>({ view: 'grid' });
+    const [category, setCategory] = useState<ClothingCategory | null>(null);
+    const [showSources, setShowSources] = useState(false);
+    const [notice, setNotice] = useState('');
+    const picking = useRef(false);
+    const openedLink = useRef<string | undefined>(undefined);
+    const wardrobe = useQuery({ queryKey: itemsKey, queryFn: () => getWardrobeItems() });
+    const items = wardrobe.data ?? [];
+    const gaps = useQuery({ queryKey: gapsKey, queryFn: getGapAnalysis, enabled: items.length >= 5 });
+    const filtered = category ? items.filter((item) => item.category === category) : items;
+    const availableWidth = Platform.OS === 'web' && width >= 760 ? width - 240 : width;
+    const columns = availableWidth >= 1000 ? 4 : availableWidth >= 640 ? 3 : 2;
+    const bottom = Platform.OS === 'ios' ? insets.bottom + 72 : 24;
 
     useEffect(() => {
-        loadItems();
-    }, []);
-
-    useEffect(() => {
-        if (items.length >= 5) loadGaps();
-    }, [items.length]);
-
-    const onRefresh = useCallback(async () => {
-        setRefreshing(true);
-        await loadItems(category);
-        setRefreshing(false);
-    }, [category, loadItems]);
-
-    const onCategoryChange = useCallback((cat: ClothingCategory | 'ALL') => {
-        setCategory(cat);
-        loadItems(cat);
-    }, [loadItems]);
-
-    const pickAndAdd = useCallback(async (source: 'camera' | 'gallery') => {
-        const permission =
-            source === 'camera'
-                ? await ImagePicker.requestCameraPermissionsAsync()
-                : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-        if (!permission.granted) {
-            Alert.alert('Permission needed', `Please allow ${source} access in Settings.`);
+        if (!itemId) {
+            openedLink.current = undefined;
             return;
         }
+        if (!wardrobe.data || openedLink.current === itemId) return;
+        openedLink.current = itemId;
+        const item = wardrobe.data.find((piece) => piece.id === itemId);
+        if (item) setScreen({ view: 'detail', item });
+        else setNotice('That piece is no longer in your wardrobe.');
+    }, [itemId, wardrobe.data]);
 
-        const result =
-            source === 'camera'
-                ? await ImagePicker.launchCameraAsync({
-                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                      quality: 0.85,
-                      allowsEditing: true,
-                      aspect: [3, 4],
-                  })
-                : await ImagePicker.launchImageLibraryAsync({
-                      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-                      quality: 0.85,
-                      allowsEditing: true,
-                      aspect: [3, 4],
-                  });
+    function backToGrid() {
+        setScreen({ view: 'grid' });
+    }
 
-        if (result.canceled || !result.assets[0]) return;
-
-        const imageUri = result.assets[0].uri;
-        setState({ view: 'addingItem', imageUri });
-
+    async function pickAndAdd(source: 'camera' | 'gallery') {
+        if (picking.current) return;
+        picking.current = true;
+        setNotice('');
+        setShowSources(false);
         try {
-            const item = await addWardrobeItem(imageUri);
-            setState({ view: 'confirmItem', item });
-            setItems((prev) => [item, ...prev]);
-        } catch (err: any) {
-            Alert.alert('Failed to add item', err?.message ?? 'Please try again.');
-            setState({ view: 'grid' });
+            if (source === 'camera') {
+                const permission = await ImagePicker.requestCameraPermissionsAsync();
+                if (!permission.granted) {
+                    setNotice('Camera access is off. You can choose a photo from your library.');
+                    return;
+                }
+            }
+            const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.85 };
+            const result = await (source === 'camera'
+                ? ImagePicker.launchCameraAsync(options)
+                : ImagePicker.launchImageLibraryAsync(options));
+            if (result.canceled) return;
+            const photo = result.assets[0];
+            setScreen({ view: 'adding', uri: photo.uri });
+            const item = await addWardrobeItem(photo.uri, undefined, photo.mimeType, photo.fileName);
+            cache.setQueryData<ClothingItem[]>(itemsKey, (previous) => [item, ...(previous ?? []).filter((piece) => piece.id !== item.id)]);
+            void cache.invalidateQueries({ queryKey: itemsKey });
+            void cache.invalidateQueries({ queryKey: gapsKey });
+            setCategory(null);
+            setNotice('Item added to your wardrobe.');
+            setScreen({ view: 'detail', item });
+        } catch (error) {
+            setNotice(error instanceof Error ? error.message : 'Couldn’t add this item. Try again.');
+            backToGrid();
+        } finally {
+            picking.current = false;
         }
-    }, []);
+    }
 
-    const onArchive = useCallback(async (item: ClothingItem) => {
-        Alert.alert('Archive item?', `"${item.label}" will be removed from your wardrobe.`, [
+    function addItem() {
+        if (Platform.OS === 'web') void pickAndAdd('gallery');
+        else setShowSources((open) => !open);
+    }
+
+    function onArchive(item: ClothingItem) {
+        const archive = async () => {
+            try {
+                await archiveWardrobeItem(item.id);
+                cache.setQueryData<ClothingItem[]>(itemsKey, (previous) => previous?.filter((piece) => piece.id !== item.id));
+                void cache.invalidateQueries({ queryKey: itemsKey });
+                void cache.invalidateQueries({ queryKey: gapsKey });
+                setNotice('Item archived.');
+                backToGrid();
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Couldn’t archive this item.';
+                if (Platform.OS === 'web') window.alert(message);
+                else Alert.alert('Couldn’t archive item', message);
+            }
+        };
+        if (Platform.OS === 'web') {
+            if (window.confirm(`Archive “${item.label}”?`)) void archive();
+            return;
+        }
+        Alert.alert('Archive item?', `“${item.label}” will be removed from your wardrobe.`, [
             { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Archive',
-                style: 'destructive',
-                onPress: async () => {
-                    try {
-                        await archiveWardrobeItem(item.id);
-                        setItems((prev) => prev.filter((i) => i.id !== item.id));
-                        setState({ view: 'grid' });
-                    } catch (err: any) {
-                        Alert.alert('Error', err?.message ?? 'Could not archive item.');
-                    }
-                },
-            },
+            { text: 'Archive', style: 'destructive', onPress: () => void archive() },
         ]);
-    }, []);
-
-    // ─── Sub-screen renders ──────────────────────────────────────────────────
-
-    if (state.view === 'itemDetail') {
-        return (
-            <ItemDetailScreen
-                item={state.item}
-                onBack={() => setState({ view: 'grid' })}
-                onGetCombos={(item, combos) => setState({ view: 'combos', item, combos })}
-                onArchive={onArchive}
-            />
-        );
     }
 
-    if (state.view === 'combos') {
-        return (
-            <OutfitCombosScreen
-                item={state.item}
-                combos={state.combos}
-                onBack={() => setState({ view: 'itemDetail', item: state.item })}
-                allItems={items}
-            />
-        );
-    }
+    if (screen.view === 'detail') return (
+        <ItemDetailScreen item={screen.item} onBack={backToGrid} onArchive={onArchive}
+            onGetCombos={(item, combos) => setScreen({ view: 'combos', item, combos })} />
+    );
+    if (screen.view === 'combos') return (
+        <OutfitCombosScreen item={screen.item} combos={screen.combos} allItems={items}
+            onBack={() => setScreen({ view: 'detail', item: screen.item })} />
+    );
+    if (screen.view === 'builder') return <OutfitBuilderScreen items={items} onBack={backToGrid} />;
+    if (screen.view === 'outfits') return <SavedOutfitsScreen allItems={items} onBack={backToGrid} />;
+    if (screen.view === 'adding') return (
+        <View style={[styles.root, styles.progress, { paddingTop: insets.top }]}>
+            <Image source={screen.uri} style={styles.preview} contentFit="cover" accessibilityLabel="Selected wardrobe photo" />
+            <ActivityIndicator color={colors.purple} />
+            <Text accessibilityLiveRegion="polite" style={styles.sectionTitle}>Adding your item…</Text>
+            <Text style={styles.body}>FitCheck is identifying the piece and its colors.</Text>
+        </View>
+    );
 
-    if (state.view === 'outfitBuilder') {
-        return (
-            <OutfitBuilderScreen
-                items={items}
-                onBack={() => setState({ view: 'grid' })}
-            />
-        );
-    }
-
-    if (state.view === 'savedOutfits') {
-        return (
-            <SavedOutfitsScreen
-                onBack={() => setState({ view: 'grid' })}
-                allItems={items}
-            />
-        );
-    }
-
-    // ─── Adding item states ──────────────────────────────────────────────────
-
-    if (state.view === 'addingItem') {
-        return (
-            <View style={[styles.root, { paddingTop: insets.top }]}>
-                <StatusBar barStyle="dark-content" />
-                <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Adding Item</Text>
+    const heading = (
+        <View style={styles.header}>
+            <View style={styles.titleRow}>
+                <View style={styles.copy}>
+                    <Text accessibilityRole="header" style={styles.title}>Wardrobe</Text>
+                    <Text style={styles.body}>{wardrobe.data ? `${items.length} ${items.length === 1 ? 'piece' : 'pieces'}` : 'Your saved clothes'}</Text>
                 </View>
-                <Animated.View entering={FadeIn} style={styles.taggingCard}>
-                    <Image
-                        source={{ uri: state.imageUri }}
-                        style={styles.taggingImage}
-                        resizeMode="cover"
-                    />
-                    <View style={styles.taggingOverlay}>
-                        <ActivityIndicator size="large" color={LIME} />
-                        <Text style={styles.taggingTitle}>AI is tagging your item...</Text>
-                        <Text style={styles.taggingSubtitle}>
-                            Gemini is identifying the type, colors, and occasions.
-                        </Text>
+                <Pressable accessibilityRole="button" accessibilityState={Platform.OS === 'web' ? undefined : { expanded: showSources }} onPress={addItem}
+                    style={({ pressed }) => [styles.button, styles.primary, pressed && styles.pressed]}>
+                    <Plus size={19} color="#fff" /><Text style={styles.primaryText}>Add item</Text>
+                </Pressable>
+            </View>
+            {showSources && (
+                <View style={styles.actions}>
+                    <Pressable accessibilityRole="button" style={styles.button} onPress={() => void pickAndAdd('camera')}>
+                        <Camera size={18} color={colors.purple} /><Text style={styles.label}>Take a photo</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" style={styles.button} onPress={() => void pickAndAdd('gallery')}>
+                        <ImagePlus size={18} color={colors.purple} /><Text style={styles.label}>Choose from library</Text>
+                    </Pressable>
+                </View>
+            )}
+            {!!notice && <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text>}
+            <View style={styles.tools}>
+                <Pressable accessibilityRole="button" onPress={() => setScreen({ view: 'outfits' })}
+                    style={({ pressed }) => [styles.tool, pressed && styles.pressed]}>
+                    <View style={styles.icon}><Layers size={20} color={colors.purple} /></View>
+                    <Text style={[styles.label, styles.copy]}>Saved outfits</Text>
+                    <ChevronRight size={17} color={colors.secondary} />
+                </Pressable>
+                <Pressable accessibilityRole="button" disabled={items.length < 2} onPress={() => setScreen({ view: 'builder' })}
+                    style={({ pressed }) => [styles.tool, pressed && styles.pressed]}>
+                    <View style={styles.icon}><Sparkles size={20} color={colors.purple} /></View>
+                    <View style={styles.copy}>
+                        <Text style={styles.label}>Build an outfit</Text>
+                        {items.length < 2 && <Text style={styles.meta}>Needs 2 pieces</Text>}
                     </View>
-                </Animated.View>
+                    {items.length >= 2 && <ChevronRight size={17} color={colors.secondary} />}
+                </Pressable>
             </View>
-        );
-    }
-
-    if (state.view === 'confirmItem') {
-        const item = state.item;
-        return (
-            <View style={[styles.root, { paddingTop: insets.top }]}>
-                <StatusBar barStyle="dark-content" />
-                <View style={styles.header}>
-                    <TouchableOpacity onPress={() => setState({ view: 'grid' })}>
-                        <Text style={styles.backBtn}>← Done</Text>
-                    </TouchableOpacity>
+            {!!items.length && (
+                <View style={styles.filters}>
+                    <Text accessibilityRole="header" style={styles.sectionTitle}>Your pieces</Text>
+                    <View style={styles.actions}>
+                        {[null, ...(Object.keys(categories) as ClothingCategory[])].map((value) => (
+                            <Pressable key={value ?? 'all'} accessibilityRole="button" accessibilityState={{ selected: category === value }}
+                                onPress={() => setCategory(value)} style={[styles.filter, category === value && styles.selected]}>
+                                <Text style={styles.label}>{value ? categories[value] : 'All'}</Text>
+                            </Pressable>
+                        ))}
+                    </View>
                 </View>
-                <ScrollView
-                    contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 32 }]}
-                    showsVerticalScrollIndicator={false}
-                >
-                    <Animated.View entering={FadeIn} style={styles.confirmCard}>
-                        <Image
-                            source={{ uri: item.imageUrl }}
-                            style={styles.confirmImage}
-                            resizeMode="cover"
-                        />
-                        <View style={styles.confirmInfo}>
-                            <View style={styles.confirmBadge}>
-                                <Text style={styles.confirmBadgeText}>AI Tagged</Text>
-                            </View>
-                            <Text style={styles.confirmLabel}>{item.label}</Text>
-                            <View style={styles.tagRow}>
-                                <View style={[styles.chip, styles.chipCategory]}>
-                                    <Text style={styles.chipTextDark}>{item.category}</Text>
-                                </View>
-                                {item.colors.map((c) => (
-                                    <View key={c} style={styles.chip}>
-                                        <Text style={styles.chipText}>{c}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                            {item.occasions.length > 0 && (
-                                <View style={styles.tagRow}>
-                                    {item.occasions.map((o) => (
-                                        <View key={o} style={[styles.chip, styles.chipOccasion]}>
-                                            <Text style={styles.chipText}>{o.toLowerCase()}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            )}
-                            {item.seasons.length > 0 && (
-                                <View style={styles.tagRow}>
-                                    {item.seasons.map((s) => (
-                                        <View key={s} style={[styles.chip, styles.chipSeason]}>
-                                            <Text style={styles.chipText}>{s.toLowerCase().replace('_', ' ')}</Text>
-                                        </View>
-                                    ))}
-                                </View>
-                            )}
-                        </View>
-                        <TouchableOpacity
-                            style={styles.doneBtn}
-                            onPress={() => setState({ view: 'itemDetail', item })}
-                            activeOpacity={0.85}
-                        >
-                            <Text style={styles.doneBtnText}>View Item →</Text>
-                        </TouchableOpacity>
-                    </Animated.View>
-                </ScrollView>
-            </View>
-        );
-    }
-
-    // ─── Main grid view ──────────────────────────────────────────────────────
-
-    const filteredItems = items; // filtering done server-side on category change
+            )}
+        </View>
+    );
 
     return (
         <View style={[styles.root, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" />
-
-            {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.headerTitle}>Wardrobe</Text>
-                    <Text style={styles.headerSub}>{items.length} items</Text>
-                </View>
-                <View style={styles.headerActions}>
-                    <TouchableOpacity
-                        style={styles.headerBtn}
-                        onPress={() => setState({ view: 'savedOutfits' })}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.headerBtnText}>Outfits</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.addBtn}
-                        onPress={() => {
-                            Alert.alert('Add Item', 'Choose a source', [
-                                { text: 'Camera', onPress: () => pickAndAdd('camera') },
-                                { text: 'Gallery', onPress: () => pickAndAdd('gallery') },
-                                { text: 'Cancel', style: 'cancel' },
-                            ]);
-                        }}
-                        activeOpacity={0.85}
-                    >
-                        <Text style={styles.addBtnText}>+</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* Category tabs */}
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.catScroll}
-                contentContainerStyle={styles.catContent}
-            >
-                {CATEGORIES.map((cat) => (
-                    <TouchableOpacity
-                        key={cat.value}
-                        style={[styles.catTab, category === cat.value && styles.catTabActive]}
-                        onPress={() => onCategoryChange(cat.value)}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={[styles.catTabText, category === cat.value && styles.catTabTextActive]}>
-                            {cat.label}
-                        </Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
-
-            {/* Grid */}
-            {loading && items.length === 0 ? (
-                <View style={styles.loadingCenter}>
-                    <ActivityIndicator size="large" color={LIME} />
-                </View>
-            ) : filteredItems.length === 0 ? (
-                <Animated.View entering={FadeIn} style={styles.emptyState}>
-                    <Text style={styles.emptyEmoji}>👗</Text>
-                    <Text style={styles.emptyTitle}>Your wardrobe is empty</Text>
-                    <Text style={styles.emptySub}>Tap + to add your first clothing item.</Text>
-                    <TouchableOpacity
-                        style={styles.emptyBtn}
-                        onPress={() => {
-                            Alert.alert('Add Item', 'Choose a source', [
-                                { text: 'Camera', onPress: () => pickAndAdd('camera') },
-                                { text: 'Gallery', onPress: () => pickAndAdd('gallery') },
-                                { text: 'Cancel', style: 'cancel' },
-                            ]);
-                        }}
-                        activeOpacity={0.85}
-                    >
-                        <Text style={styles.emptyBtnText}>Add Item</Text>
-                    </TouchableOpacity>
-                </Animated.View>
-            ) : (
-                <FlatList
-                    data={filteredItems}
-                    numColumns={2}
+            <View style={styles.page}>
+                <FlashList
+                    key={columns}
+                    data={filtered}
+                    numColumns={columns}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={[styles.gridContent, { paddingBottom: insets.bottom + 120 }]}
-                    columnWrapperStyle={styles.gridRow}
-                    refreshControl={
-                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={LIME} />
-                    }
-                    ListFooterComponent={
-                        items.length >= 5 ? (
-                            <GapAnalysisCard gaps={gaps} loading={gapsLoading} />
-                        ) : null
+                    contentContainerStyle={{ paddingBottom: bottom }}
+                    onRefresh={() => void wardrobe.refetch()}
+                    refreshing={wardrobe.isRefetching}
+                    ListHeaderComponent={heading}
+                    ListEmptyComponent={
+                        wardrobe.isPending ? <ActivityIndicator color={colors.purple} style={styles.loader} /> : (
+                            <View style={styles.empty}>
+                                <View style={styles.emptyIcon}><Shirt size={26} color={colors.purple} /></View>
+                                <Text accessibilityRole="header" style={styles.sectionTitle}>
+                                    {wardrobe.isError ? 'Couldn’t load your wardrobe' : category ? `No ${categories[category].toLowerCase()} yet` : 'Add your first piece'}
+                                </Text>
+                                <Text style={styles.body}>
+                                    {wardrobe.isError ? 'Try loading your saved pieces again.' : category ? 'Choose another category to see more pieces.' : 'Start with something you wear often. FitCheck can use your saved pieces to suggest outfits.'}
+                                </Text>
+                                <Pressable accessibilityRole="button" onPress={wardrobe.isError ? () => void wardrobe.refetch() : category ? () => setCategory(null) : addItem}
+                                    style={({ pressed }) => [styles.button, pressed && styles.pressed]}>
+                                    {!category && !wardrobe.isError && <ImagePlus size={18} color={colors.purple} />}
+                                    <Text style={styles.label}>{wardrobe.isError ? 'Try again' : category ? 'Show all pieces' : 'Add a photo'}</Text>
+                                </Pressable>
+                            </View>
+                        )
                     }
                     renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.itemCard}
-                            onPress={() => setState({ view: 'itemDetail', item })}
-                            activeOpacity={0.85}
-                        >
-                            <Image
-                                source={{ uri: item.thumbnailUrl ?? item.imageUrl }}
-                                style={styles.itemThumb}
-                                resizeMode="cover"
-                            />
-                            <View style={styles.itemMeta}>
-                                <Text style={styles.itemLabel} numberOfLines={1}>{item.label}</Text>
-                                <View style={[styles.catDot, { backgroundColor: categoryColor(item.category) }]} />
-                            </View>
-                        </TouchableOpacity>
+                        <View style={styles.cell}>
+                            <Pressable accessibilityRole="button" accessibilityLabel={`${item.label}, ${categories[item.category] ?? 'Other'}`}
+                                onPress={() => setScreen({ view: 'detail', item })}
+                                style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
+                                <View style={styles.thumbnail}>
+                                    <Shirt size={29} color={colors.purple} />
+                                    <Image source={item.thumbnailUrl ?? item.imageUrl} style={StyleSheet.absoluteFill} contentFit="cover" accessible={false} recyclingKey={item.id} />
+                                </View>
+                                <View style={styles.itemCopy}>
+                                    <Text style={styles.itemLabel} numberOfLines={2}>{item.label}</Text>
+                                    <Text style={styles.meta}>{categories[item.category] ?? 'Other'}</Text>
+                                </View>
+                            </Pressable>
+                        </View>
                     )}
+                    ListFooterComponent={!category && !!gaps.data?.gaps.length ? (
+                        <View style={styles.gaps}>
+                            <Text accessibilityRole="header" style={styles.sectionTitle}>Pieces to consider</Text>
+                            {gaps.data.gaps.map((gap, index) => (
+                                <View key={`${gap.item}-${index}`}>
+                                    <Text style={styles.itemLabel}>{gap.item}</Text>
+                                    <Text style={styles.body}>{gap.reason}</Text>
+                                </View>
+                            ))}
+                        </View>
+                    ) : null}
                 />
-            )}
-
-            {/* Build Outfit FAB */}
-            {items.length >= 2 && (
-                <TouchableOpacity
-                    style={[styles.fab, { bottom: insets.bottom + 90 }]}
-                    onPress={() => setState({ view: 'outfitBuilder' })}
-                    activeOpacity={0.9}
-                >
-                    <Text style={styles.fabText}>Build Outfit</Text>
-                </TouchableOpacity>
-            )}
-        </View>
-    );
-}
-
-// ─── Gap Analysis Card ────────────────────────────────────────────────────────
-
-function GapAnalysisCard({ gaps, loading }: { gaps: GapItem[]; loading: boolean }) {
-    if (loading) {
-        return (
-            <View style={styles.gapCard}>
-                <Text style={styles.gapTitle}>Wardrobe Gap Analysis</Text>
-                <ActivityIndicator size="small" color={LIME} style={{ marginTop: 8 }} />
             </View>
-        );
-    }
-    if (gaps.length === 0) return null;
-    return (
-        <View style={styles.gapCard}>
-            <Text style={styles.gapTitle}>What You're Missing</Text>
-            <Text style={styles.gapSubtitle}>AI analysis of your wardrobe gaps</Text>
-            {gaps.map((gap, i) => (
-                <View key={i} style={styles.gapRow}>
-                    <View style={styles.gapDot} />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.gapItem}>{gap.item}</Text>
-                        <Text style={styles.gapReason}>{gap.reason}</Text>
-                    </View>
-                </View>
-            ))}
         </View>
     );
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function categoryColor(cat: ClothingCategory): string {
-    const map: Record<ClothingCategory, string> = {
-        TOPS: '#4A9EFF',
-        BOTTOMS: '#9B59B6',
-        SHOES: '#E67E22',
-        ACCESSORIES: '#E91E8C',
-        OUTERWEAR: '#2ECC71',
-        DRESSES: '#F39C12',
-        ACTIVEWEAR: '#1ABC9C',
-        OTHER: '#95A5A6',
-    };
-    return map[cat] ?? '#95A5A6';
-}
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-    root: {
-        flex: 1,
-        backgroundColor: Theme.colors.background.light,
-        ...Platform.select({ web: { width: '100%', maxWidth: 1000, alignSelf: 'center', paddingTop: 32 } }),
-    },
-    header: {
-        paddingHorizontal: Theme.spacing.md,
-        paddingTop: Theme.spacing.sm,
-        paddingBottom: Theme.spacing.sm,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    headerTitle: {
-        fontSize: 28,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
-    },
-    headerSub: {
-        fontSize: 13,
-        fontFamily: 'GoogleSansFlex_400Regular',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
-        marginTop: 1,
-    },
-    headerActions: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: Theme.spacing.sm,
-    },
-    headerBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: Theme.radius.xl,
-        borderWidth: 1.5,
-        borderColor: LIME,
-    },
-    headerBtnText: {
-        fontSize: 14,
-        fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.palette.primaryDark,
-    },
-    addBtn: {
-        width: 38,
-        height: 38,
-        borderRadius: 19,
-        backgroundColor: LIME,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    addBtnText: {
-        fontSize: 24,
-        color: '#111',
-        lineHeight: 28,
-        fontFamily: 'GoogleSansFlex_700Bold',
-    },
-    backBtn: {
-        fontSize: 16,
-        fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.palette.primaryDark,
-    },
-    catScroll: {
-        flexGrow: 0,
-        marginBottom: Theme.spacing.sm,
-    },
-    catContent: {
-        paddingHorizontal: Theme.spacing.md,
-        gap: Theme.spacing.xs,
-    },
-    catTab: {
-        paddingHorizontal: 14,
-        paddingVertical: 7,
-        borderRadius: Theme.radius.full,
-        backgroundColor: Theme.colors.background.surface.light,
-        borderWidth: 1.5,
-        borderColor: 'transparent',
-    },
-    catTabActive: {
-        backgroundColor: LIME,
-        borderColor: LIME,
-    },
-    catTabText: {
-        fontSize: 13,
-        fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
-    },
-    catTabTextActive: {
-        color: '#111',
-    },
-    loadingCenter: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    emptyState: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: Theme.spacing.xl,
-        gap: Theme.spacing.sm,
-    },
-    emptyEmoji: { fontSize: 56 },
-    emptyTitle: {
-        fontSize: 20,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
-    },
-    emptySub: {
-        fontSize: 15,
-        fontFamily: 'GoogleSansFlex_400Regular',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
-        textAlign: 'center',
-    },
-    emptyBtn: {
-        marginTop: Theme.spacing.sm,
-        backgroundColor: LIME,
-        borderRadius: Theme.radius.xl,
-        paddingHorizontal: 32,
-        paddingVertical: 14,
-    },
-    emptyBtnText: {
-        fontSize: 16,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#111',
-    },
-    gridContent: {
-        paddingHorizontal: Theme.spacing.md,
-        paddingTop: Theme.spacing.xs,
-        gap: Theme.spacing.sm,
-    },
-    gridRow: {
-        gap: Theme.spacing.sm,
-    },
-    itemCard: {
-        flex: 1,
-        borderRadius: Theme.radius.xl,
-        overflow: 'hidden',
-        backgroundColor: Theme.colors.background.surface.light,
-        ...Theme.shadows.sm,
-    },
-    itemThumb: {
-        width: '100%',
-        aspectRatio: 3 / 4,
-        backgroundColor: Theme.colors.border,
-    },
-    itemMeta: {
-        padding: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    itemLabel: {
-        flex: 1,
-        fontSize: 13,
-        fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
-    },
-    catDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        marginLeft: 6,
-        flexShrink: 0,
-    },
-    fab: {
-        position: 'absolute',
-        right: Theme.spacing.md,
-        backgroundColor: '#111',
-        borderRadius: Theme.radius.full,
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        ...Theme.shadows.md,
-    },
-    fabText: {
-        fontSize: 14,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: LIME,
-    },
-    // Adding item states
-    scroll: {
-        paddingHorizontal: Theme.spacing.md,
-    },
-    taggingCard: {
-        margin: Theme.spacing.md,
-        borderRadius: Theme.radius.xxl,
-        overflow: 'hidden',
-        backgroundColor: Theme.colors.background.surface.light,
-        ...Theme.shadows.md,
-    },
-    taggingImage: {
-        width: '100%',
-        aspectRatio: 3 / 4,
-        opacity: 0.5,
-    },
-    taggingOverlay: {
-        padding: Theme.spacing.xl,
-        alignItems: 'center',
-        gap: Theme.spacing.sm,
-    },
-    taggingTitle: {
-        fontSize: 18,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
-    },
-    taggingSubtitle: {
-        fontSize: 14,
-        fontFamily: 'GoogleSansFlex_400Regular',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.secondary : Theme.colors.text.secondary),
-        textAlign: 'center',
-    },
-    confirmCard: {
-        backgroundColor: Theme.colors.background.surface.light,
-        borderRadius: Theme.radius.xxl,
-        overflow: 'hidden',
-        ...Theme.shadows.md,
-    },
-    confirmImage: {
-        width: '100%',
-        aspectRatio: 3 / 4,
-    },
-    confirmInfo: {
-        padding: Theme.spacing.md,
-        gap: Theme.spacing.sm,
-    },
-    confirmBadge: {
-        alignSelf: 'flex-start',
-        backgroundColor: LIME,
-        borderRadius: Theme.radius.full,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-    },
-    confirmBadgeText: {
-        fontSize: 11,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#111',
-        letterSpacing: 0.5,
-    },
-    confirmLabel: {
-        fontSize: 20,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: (Platform.OS === 'web' ? Theme.colors.textLight.primary : Theme.colors.text.primary),
-    },
-    tagRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 6,
-    },
-    chip: {
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: Theme.radius.full,
-        backgroundColor: '#F0F0F0',
-    },
-    chipCategory: {
-        backgroundColor: '#111',
-    },
-    chipOccasion: {
-        backgroundColor: '#E8F5E9',
-    },
-    chipSeason: {
-        backgroundColor: '#E3F2FD',
-    },
-    chipText: {
-        fontSize: 12,
-        fontFamily: 'GoogleSansFlex_500Medium',
-        color: '#555',
-    },
-    chipTextDark: {
-        fontSize: 12,
-        fontFamily: 'GoogleSansFlex_500Medium',
-        color: '#FFF',
-    },
-    doneBtn: {
-        margin: Theme.spacing.md,
-        marginTop: 0,
-        backgroundColor: LIME,
-        borderRadius: Theme.radius.xl,
-        paddingVertical: 14,
-        alignItems: 'center',
-    },
-    doneBtnText: {
-        fontSize: 16,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#111',
-    },
-    // Gap analysis
-    gapCard: {
-        marginTop: Theme.spacing.lg,
-        backgroundColor: '#FFFBF0',
-        borderRadius: Theme.radius.xl,
-        padding: Theme.spacing.md,
-        borderWidth: 1,
-        borderColor: '#FFE082',
-        gap: 6,
-    },
-    gapTitle: {
-        fontSize: 15,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#5D4037',
-    },
-    gapSubtitle: {
-        fontSize: 12,
-        fontFamily: 'GoogleSansFlex_400Regular',
-        color: '#8D6E63',
-        marginBottom: 4,
-    },
-    gapRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 10,
-        marginTop: 6,
-    },
-    gapDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: '#F59E0B',
-        marginTop: 5,
-        flexShrink: 0,
-    },
-    gapItem: {
-        fontSize: 13,
-        fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: '#4E342E',
-    },
-    gapReason: {
-        fontSize: 12,
-        fontFamily: 'GoogleSansFlex_400Regular',
-        color: '#8D6E63',
-        lineHeight: 17,
-    },
+    root: { flex: 1, backgroundColor: Theme.colors.background.light },
+    page: { flex: 1, width: '100%', maxWidth: 1080, alignSelf: 'center', paddingHorizontal: 14 },
+    header: { paddingHorizontal: 6, paddingTop: Platform.OS === 'web' ? 34 : 16, gap: 18, paddingBottom: 14 },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    title: { fontFamily: FontFamily.bold, fontSize: 34, letterSpacing: -1, color: colors.ink },
+    copy: { flex: 1 },
+    body: { fontFamily: FontFamily.regular, fontSize: 15, color: colors.secondary, maxWidth: 375 },
+    label: { fontFamily: FontFamily.semibold, fontSize: 14, color: colors.purple, flexShrink: 1 },
+    meta: { fontFamily: FontFamily.regular, fontSize: 13, color: colors.secondary },
+    button: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 13, paddingVertical: 8, borderRadius: 13, borderCurve: 'continuous', borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+    primary: { backgroundColor: colors.ink, borderColor: colors.ink, flexShrink: 1 },
+    primaryText: { fontFamily: FontFamily.bold, fontSize: 14, color: '#fff', flexShrink: 1 },
+    pressed: { opacity: 0.73 },
+    tools: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    tool: { flexGrow: 1, flexBasis: 144, minHeight: 64, borderRadius: 16, borderCurve: 'continuous', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 9, padding: 10 },
+    icon: { width: 36, height: 36, borderRadius: 11, borderCurve: 'continuous', justifyContent: 'center', alignItems: 'center', backgroundColor: colors.tint },
+    filters: { gap: 9 },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
+    filter: { minHeight: 44, paddingHorizontal: 12, justifyContent: 'center', borderColor: colors.border, borderWidth: 1, borderRadius: 12, borderCurve: 'continuous', backgroundColor: colors.surface },
+    selected: { backgroundColor: colors.tint, borderColor: colors.purple },
+    sectionTitle: { fontFamily: FontFamily.bold, fontSize: 22, letterSpacing: -0.4, color: colors.ink },
+    empty: { marginHorizontal: 6, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 23, borderCurve: 'continuous', padding: 24, gap: 11, alignItems: 'flex-start' },
+    emptyIcon: { width: 52, height: 52, borderRadius: 16, borderCurve: 'continuous', justifyContent: 'center', alignItems: 'center', backgroundColor: colors.tint },
+    loader: { marginTop: 32 },
+    cell: { flex: 1, paddingHorizontal: 6, paddingBottom: 12 },
+    item: { borderRadius: 17, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+    thumbnail: { width: '100%', aspectRatio: 4 / 5, backgroundColor: colors.tint, alignItems: 'center', justifyContent: 'center' },
+    itemCopy: { padding: 11, gap: 3 },
+    itemLabel: { fontFamily: FontFamily.bold, fontSize: 15, color: colors.ink },
+    gaps: { gap: 12, margin: 6, padding: 17, backgroundColor: colors.tint, borderRadius: 18, borderCurve: 'continuous' },
+    notice: { fontFamily: FontFamily.semibold, fontSize: 14, color: colors.ink, backgroundColor: colors.tint, padding: 12, borderRadius: 12 },
+    progress: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 20 },
+    preview: { width: 150, height: 180, borderRadius: 16, backgroundColor: colors.tint },
 });
