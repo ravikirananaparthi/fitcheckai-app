@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { fitcheckClient } from './fitcheck-client';
 import type {
     FitCheck,
@@ -12,21 +13,29 @@ import type {
 export const analyzeFitCheck = async (
     imageUri: string,
     occasion?: string,
+    mimeType?: string | null,
+    fileName?: string | null,
 ): Promise<FitCheckJobResponse> => {
     const formData = new FormData();
 
-    formData.append('image', {
-        uri: imageUri,
-        name: 'outfit.jpg',
-        type: 'image/jpeg',
-    } as any);
+    if (Platform.OS === 'web') {
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+        formData.append('image', blob, fileName || 'outfit.jpg');
+    } else {
+        formData.append('image', {
+            uri: imageUri,
+            name: fileName || 'outfit.jpg',
+            type: mimeType || 'image/jpeg',
+        } as any);
+    }
 
     if (occasion) formData.append('occasion', occasion);
 
     const res = await fitcheckClient.post<{ data: FitCheckJobResponse }>(
         '/fitcheck/analyze',
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
+        { headers: { 'Content-Type': Platform.OS === 'web' ? undefined : 'multipart/form-data' } },
     );
     return res.data.data;
 };

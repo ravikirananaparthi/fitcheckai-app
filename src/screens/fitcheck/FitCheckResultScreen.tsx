@@ -1,270 +1,42 @@
-import React, { useState } from 'react';
-import {
-    View, Text, StyleSheet, ScrollView,
-    TouchableOpacity, Image, StatusBar,
-} from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { Theme } from '@/constants/theme';
-import { ScoreRing } from './components/ScoreRing';
-import { OccasionBadges } from './components/OccasionBadges';
+import { ArrowLeft, ArrowRight, Check, Lightbulb, MessageCircle, Sparkles } from 'lucide-react-native';
 import type { FitCheck } from '@/src/types/fitcheck.types';
 
-interface Props {
-    fitCheck: FitCheck;
-    onChatPress: () => void;
-    onNewCheck: () => void;
-}
+interface Props { fitCheck: FitCheck; onChatPress: () => void; onNewCheck: () => void; }
 
 export function FitCheckResultScreen({ fitCheck, onChatPress, onNewCheck }: Props) {
     const insets = useSafeAreaInsets();
+    const { width } = useWindowDimensions();
+    const wide = width >= 900;
     const fb = fitCheck.feedback;
-
-    if (!fb) return null;
-
-    return (
-        <View style={[styles.root, { paddingTop: insets.top }]}>
-            <StatusBar barStyle="dark-content" />
-
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={onNewCheck} style={styles.backBtn}>
-                    <Text style={styles.backText}>← New Check</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Your Fit Check</Text>
-                <View style={{ width: 90 }} />
+    if (!fb) return <View style={styles.root}><View style={styles.empty}><Text style={styles.heading}>This look isn’t ready yet.</Text><Text style={styles.body}>Try opening it again in a moment.</Text><TouchableOpacity accessibilityRole="button" onPress={onNewCheck} style={styles.backButton}><ArrowLeft size={16} color="#345645"/><Text style={styles.backText}>Back to studio</Text></TouchableOpacity></View></View>;
+    const suitable = Object.entries(fb.occasions || {}).filter(([, value]) => value).map(([key]) => ({work: 'Work', casual: 'Casual', date: 'Date', party: 'Party', beach: 'Beach'}[key] || key));
+    return <View style={[styles.root, { paddingTop: insets.top }]}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.page, { paddingBottom: insets.bottom + 120 }]}>
+            <TouchableOpacity onPress={onNewCheck} style={styles.backButton} accessibilityRole="button"><ArrowLeft size={17} color="#456753"/><Text style={styles.backText}>Back to studio</Text></TouchableOpacity>
+            <View style={styles.titleRow}><View style={{flex:1}}><View style={styles.eyebrowRow}><View style={styles.dot}/><Text style={styles.eyebrow}>YOUR STYLE REPORT</Text></View><Text style={styles.heading}>The verdict is in.</Text><Text style={styles.subheading}>A closer look at the details that make your outfit yours.</Text></View><View style={styles.sparkle}><Sparkles size={21} color="#42654D"/></View></View>
+            <View style={[styles.layout, wide && styles.layoutWide]}>
+                <View style={[styles.left, wide && styles.leftWide]}>
+                    <View style={styles.photoCard}><Image source={{uri:fitCheck.imageUrl}} style={styles.photo} contentFit="cover"/><View style={styles.photoLabel}><Text style={styles.photoLabelText}>YOUR LOOK</Text></View></View>
+                    <View style={styles.scoreCard}><View style={{flex:1}}><Text style={styles.label}>OVERALL SCORE</Text><View style={styles.scoreLine}><Text style={styles.score}>{typeof fb.score === 'number' ? fb.score.toFixed(1) : '—'}</Text><Text style={styles.scoreTotal}>/ 10</Text></View><Text style={styles.scoreNote}>A fresh perspective on your fit</Text></View><View style={styles.scoreIcon}><Sparkles size={23} color="#426B4C"/></View></View>
+                </View>
+                <View style={[styles.right, wide && styles.rightWide]}>
+                    <View style={styles.summaryCard}><View style={styles.cardTop}><Text style={styles.label}>THE OVERVIEW</Text><View style={styles.category}><Text style={styles.categoryText}>{fb.styleCategory || 'Your style'}</Text></View></View><Text style={styles.summaryTitle}>Your look, at a glance.</Text><Text style={styles.summary}>{fb.summary}</Text></View>
+                    <View style={[styles.feedbackRow, wide && styles.feedbackRowWide]}>
+                        <View style={[styles.feedbackCard, wide && styles.feedbackCardWide]}><View style={styles.cardHeading}><View style={styles.iconGreen}><Check size={18} color="#3F6D4B"/></View><View><Text style={styles.label}>THE HIGHLIGHTS</Text><Text style={styles.cardTitle}>What’s working</Text></View></View>{(fb.whatWorks || []).map((item, i) => <View key={i} style={styles.item}><View style={styles.itemDot}/><Text style={styles.itemText}>{item}</Text></View>)}</View>
+                        <View style={[styles.feedbackCard, wide && styles.feedbackCardWide]}><View style={styles.cardHeading}><View style={styles.iconSand}><Lightbulb size={18} color="#947443"/></View><View><Text style={styles.label}>LITTLE TWEAKS</Text><Text style={styles.cardTitle}>Try something new</Text></View></View>{(fb.improve || []).map((item, i) => <View key={i} style={styles.item}><View style={styles.itemDotSand}/><Text style={styles.itemText}>{item}</Text></View>)}</View>
+                    </View>
+                    <View style={styles.detailsCard}><View style={styles.detailBlock}><Text style={styles.label}>MADE FOR</Text><Text style={styles.detailTitle}>Wear it to</Text><View style={styles.tags}>{suitable.length ? suitable.map(item => <View key={item} style={styles.tag}><Check size={13} color="#4F7959"/><Text style={styles.tagText}>{item}</Text></View>) : <Text style={styles.body}>No occasions suggested yet.</Text>}</View></View>{!!fb.accessories?.length && <View style={styles.detailBlock}><Text style={styles.label}>THE FINISHING TOUCH</Text><Text style={styles.detailTitle}>Try adding</Text><View style={styles.tags}>{fb.accessories.map((item,i) => <View key={i} style={styles.accessory}><Text style={styles.accessoryText}>{item}</Text></View>)}</View></View>}</View>
+                    <TouchableOpacity accessibilityRole="button" onPress={onChatPress} style={styles.chatButton}><MessageCircle size={18} color="#fff"/><Text style={styles.chatText}>Ask your stylist</Text><ArrowRight size={18} color="#fff"/></TouchableOpacity><Text style={styles.chatHint}>Have a question about this look? Let’s talk.</Text>
+                </View>
             </View>
-
-            <ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
-            >
-                {/* Hero — photo + score */}
-                <View style={styles.heroRow}>
-                    <Image
-                        source={{ uri: fitCheck.imageUrl }}
-                        style={styles.outfitImage}
-                        resizeMode="cover"
-                    />
-                    <View style={styles.scoreSection}>
-                        <ScoreRing score={fb.score} />
-                        <View style={styles.styleCategoryPill}>
-                            <Text style={styles.styleCategoryText}>{fb.styleCategory}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Summary */}
-                <View style={styles.card}>
-                    <Text style={styles.summaryText}>{fb.summary}</Text>
-                </View>
-
-                {/* What Works */}
-                <View style={styles.card}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionIcon}>✅</Text>
-                        <Text style={styles.sectionTitle}>What Works</Text>
-                    </View>
-                    {fb.whatWorks.map((item, i) => (
-                        <View key={i} style={styles.bulletRow}>
-                            <View style={[styles.bullet, { backgroundColor: '#4CAF50' }]} />
-                            <Text style={styles.bulletText}>{item}</Text>
-                        </View>
-                    ))}
-                </View>
-
-                {/* Improve This */}
-                <View style={styles.card}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionIcon}>💡</Text>
-                        <Text style={styles.sectionTitle}>Improve This</Text>
-                    </View>
-                    {fb.improve.map((item, i) => (
-                        <View key={i} style={styles.bulletRow}>
-                            <View style={[styles.bullet, { backgroundColor: '#FF9800' }]} />
-                            <Text style={styles.bulletText}>{item}</Text>
-                        </View>
-                    ))}
-                </View>
-
-                {/* Occasions */}
-                <View style={styles.card}>
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionIcon}>📍</Text>
-                        <Text style={styles.sectionTitle}>Wear It To</Text>
-                    </View>
-                    <OccasionBadges occasions={fb.occasions} />
-                </View>
-
-                {/* Accessories */}
-                {fb.accessories.length > 0 && (
-                    <View style={styles.card}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionIcon}>✨</Text>
-                            <Text style={styles.sectionTitle}>Add These</Text>
-                        </View>
-                        <View style={styles.accessoryRow}>
-                            {fb.accessories.map((item, i) => (
-                                <View key={i} style={styles.accessoryPill}>
-                                    <Text style={styles.accessoryText}>{item}</Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-                )}
-            </ScrollView>
-
-            {/* Sticky CTA */}
-            <View style={[styles.ctaBar, { paddingBottom: insets.bottom + 16 }]}>
-                <TouchableOpacity style={styles.chatBtn} onPress={onChatPress} activeOpacity={0.85}>
-                    <Text style={styles.chatBtnText}>💬  Chat with AI Stylist</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
-    );
+        </ScrollView>
+    </View>;
 }
 
 const styles = StyleSheet.create({
-    root: {
-        flex: 1,
-        backgroundColor: Theme.colors.background.light,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: Theme.spacing.md,
-        paddingVertical: Theme.spacing.sm,
-        borderBottomWidth: 1,
-        borderBottomColor: Theme.colors.border,
-    },
-    backBtn: {
-        paddingVertical: 4,
-        width: 90,
-    },
-    backText: {
-        fontSize: 14,
-        color: Theme.palette.primary,
-        fontFamily: 'GoogleSansFlex_500Medium',
-    },
-    headerTitle: {
-        fontSize: 17,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
-    },
-    scroll: {
-        padding: Theme.spacing.md,
-        gap: Theme.spacing.md,
-    },
-    heroRow: {
-        flexDirection: 'row',
-        gap: Theme.spacing.md,
-        alignItems: 'center',
-    },
-    outfitImage: {
-        width: 140,
-        height: 180,
-        borderRadius: Theme.radius.xl,
-        backgroundColor: Theme.colors.border,
-    },
-    scoreSection: {
-        flex: 1,
-        alignItems: 'center',
-        gap: Theme.spacing.md,
-    },
-    styleCategoryPill: {
-        backgroundColor: Theme.palette.primary + '33',
-        paddingHorizontal: 14,
-        paddingVertical: 6,
-        borderRadius: Theme.radius.full,
-    },
-    styleCategoryText: {
-        fontSize: 13,
-        fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.palette.primaryDark,
-    },
-    card: {
-        backgroundColor: Theme.colors.background.surface.light,
-        borderRadius: Theme.radius.xl,
-        padding: Theme.spacing.md,
-        gap: Theme.spacing.sm,
-        ...Theme.shadows.sm,
-    },
-    summaryText: {
-        fontSize: 15,
-        fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.primary,
-        lineHeight: 22,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 4,
-    },
-    sectionIcon: {
-        fontSize: 16,
-    },
-    sectionTitle: {
-        fontSize: 15,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
-    },
-    bulletRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: 10,
-    },
-    bullet: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        marginTop: 7,
-        flexShrink: 0,
-    },
-    bulletText: {
-        flex: 1,
-        fontSize: 14,
-        fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.primary,
-        lineHeight: 20,
-    },
-    accessoryRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    accessoryPill: {
-        backgroundColor: Theme.palette.muted,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: Theme.radius.full,
-    },
-    accessoryText: {
-        fontSize: 13,
-        fontFamily: 'GoogleSansFlex_500Medium',
-        color: Theme.palette.primaryDark,
-    },
-    ctaBar: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        paddingHorizontal: Theme.spacing.md,
-        paddingTop: Theme.spacing.sm,
-        backgroundColor: Theme.colors.background.light,
-        borderTopWidth: 1,
-        borderTopColor: Theme.colors.border,
-    },
-    chatBtn: {
-        backgroundColor: Theme.palette.primary,
-        borderRadius: Theme.radius.xl,
-        paddingVertical: 16,
-        alignItems: 'center',
-    },
-    chatBtnText: {
-        fontSize: 16,
-        fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#111111',
-    },
+ root:{flex:1,backgroundColor:'#F7F8F3'},page:{width:'100%',maxWidth:1120,alignSelf:'center',paddingHorizontal:22,paddingTop:24},empty:{padding:28,gap:14},backButton:{alignSelf:'flex-start',flexDirection:'row',alignItems:'center',gap:8,minHeight:44,marginBottom:18},backText:{fontFamily:'GoogleSansFlex_600SemiBold',fontSize:13,color:'#456753'},titleRow:{flexDirection:'row',alignItems:'flex-start',justifyContent:'space-between',marginBottom:26},eyebrowRow:{flexDirection:'row',alignItems:'center',gap:8,marginBottom:12},dot:{width:7,height:7,borderRadius:4,backgroundColor:'#7D9C84'},eyebrow:{fontFamily:'GoogleSansFlex_700Bold',fontSize:10,letterSpacing:1.8,color:'#668072'},heading:{fontFamily:'GoogleSansFlex_700Bold',fontSize:34,lineHeight:40,letterSpacing:-1.2,color:'#20382D'},subheading:{fontFamily:'GoogleSansFlex_400Regular',fontSize:15,lineHeight:22,color:'#6D7C72',marginTop:8},sparkle:{width:44,height:44,borderRadius:22,alignItems:'center',justifyContent:'center',backgroundColor:'#E9EFE7'},layout:{gap:16},layoutWide:{flexDirection:'row',alignItems:'flex-start',gap:20},left:{gap:14},leftWide:{width:300},right:{gap:14},rightWide:{flex:1},photoCard:{height:340,borderRadius:22,overflow:'hidden',backgroundColor:'#E5ECE3'},photo:{width:'100%',height:'100%'},photoLabel:{position:'absolute',left:16,bottom:16,backgroundColor:'#243B31D9',borderRadius:20,paddingHorizontal:12,paddingVertical:8},photoLabelText:{fontFamily:'GoogleSansFlex_700Bold',fontSize:10,letterSpacing:1.3,color:'#FFFFFF'},scoreCard:{backgroundColor:'#E8F0E5',borderRadius:22,padding:22,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},label:{fontFamily:'GoogleSansFlex_700Bold',fontSize:10,letterSpacing:1.3,color:'#6A8270'},scoreLine:{flexDirection:'row',alignItems:'baseline',gap:5,marginTop:6},score:{fontFamily:'GoogleSansFlex_700Bold',fontSize:42,letterSpacing:-2,color:'#284C39'},scoreTotal:{fontFamily:'GoogleSansFlex_600SemiBold',fontSize:15,color:'#718979'},scoreNote:{fontFamily:'GoogleSansFlex_400Regular',fontSize:12,color:'#6C8371',marginTop:3},scoreIcon:{width:48,height:48,borderRadius:17,backgroundColor:'#D9E7D8',alignItems:'center',justifyContent:'center'},summaryCard:{backgroundColor:'#FFF',borderWidth:1,borderColor:'#E8ECE5',borderRadius:22,padding:24},cardTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:10},category:{backgroundColor:'#EAF1E7',borderRadius:20,paddingHorizontal:12,paddingVertical:7},categoryText:{fontFamily:'GoogleSansFlex_700Bold',fontSize:11,color:'#43684C'},summaryTitle:{fontFamily:'GoogleSansFlex_700Bold',fontSize:23,letterSpacing:-0.6,color:'#20382D',marginTop:18},summary:{fontFamily:'GoogleSansFlex_400Regular',fontSize:15,lineHeight:24,color:'#52655A',marginTop:10},feedbackRow:{gap:14},feedbackRowWide:{flexDirection:'row',alignItems:'stretch'},feedbackCard:{backgroundColor:'#fff',borderRadius:22,borderWidth:1,borderColor:'#E8ECE5',padding:22,gap:14},feedbackCardWide:{flex:1},cardHeading:{flexDirection:'row',alignItems:'center',gap:12,marginBottom:4},iconGreen:{width:40,height:40,borderRadius:14,backgroundColor:'#EAF2E7',alignItems:'center',justifyContent:'center'},iconSand:{width:40,height:40,borderRadius:14,backgroundColor:'#F7F0E4',alignItems:'center',justifyContent:'center'},cardTitle:{fontFamily:'GoogleSansFlex_700Bold',fontSize:17,color:'#253F31',marginTop:4},item:{flexDirection:'row',alignItems:'flex-start',gap:10},itemDot:{width:6,height:6,borderRadius:3,backgroundColor:'#82A586',marginTop:8},itemDotSand:{width:6,height:6,borderRadius:3,backgroundColor:'#C7A36F',marginTop:8},itemText:{flex:1,fontFamily:'GoogleSansFlex_400Regular',fontSize:14,lineHeight:21,color:'#52655A'},detailsCard:{backgroundColor:'#fff',borderRadius:22,borderWidth:1,borderColor:'#E8ECE5',padding:22,gap:22},detailBlock:{gap:10},detailTitle:{fontFamily:'GoogleSansFlex_700Bold',fontSize:17,color:'#253F31'},tags:{flexDirection:'row',flexWrap:'wrap',gap:8},tag:{flexDirection:'row',alignItems:'center',gap:6,backgroundColor:'#EDF4EA',borderRadius:20,paddingHorizontal:12,paddingVertical:9},tagText:{fontFamily:'GoogleSansFlex_600SemiBold',fontSize:12,color:'#41634B'},accessory:{borderWidth:1,borderColor:'#E4EAE3',borderRadius:20,paddingHorizontal:12,paddingVertical:9},accessoryText:{fontFamily:'GoogleSansFlex_500Medium',fontSize:12,color:'#566E5C'},body:{fontFamily:'GoogleSansFlex_400Regular',fontSize:14,color:'#52655A'},chatButton:{minHeight:54,backgroundColor:'#284C3A',borderRadius:15,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:10,marginTop:4},chatText:{fontFamily:'GoogleSansFlex_700Bold',fontSize:14,color:'#fff'},chatHint:{textAlign:'center',fontFamily:'GoogleSansFlex_400Regular',fontSize:12,color:'#7F9084',marginTop:-3}
 });
