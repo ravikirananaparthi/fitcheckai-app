@@ -1,3 +1,4 @@
+import { fitCheckColors as colors } from '@/constants/fitcheck-colors';
 import React, { useState } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
@@ -9,7 +10,7 @@ import { Theme } from '@/constants/theme';
 import { createOutfit } from '@/src/services/api/outfits.service';
 import type { ClothingItem, OutfitCombo } from '@/src/types/wardrobe.types';
 
-const LIME = Theme.palette.primary;
+const accent = colors.purple;
 
 const OCCASION_COLORS: Record<string, { bg: string; text: string }> = {
     casual: { bg: '#E8F5E9', text: '#2E7D32' },
@@ -122,7 +123,7 @@ export function OutfitCombosScreen({ item, combos, onBack }: Props) {
                                     activeOpacity={0.85}
                                 >
                                     {saving === i ? (
-                                        <ActivityIndicator size="small" color="#111" />
+                                        <ActivityIndicator size="small" color="#fff" />
                                     ) : (
                                         <Text style={styles.saveBtnText}>
                                             {isSaved ? '✓ Saved to Outfits' : 'Save as Outfit'}
@@ -142,6 +143,9 @@ const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: Theme.colors.background.light,
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
     },
     topBar: {
         paddingHorizontal: Theme.spacing.md,
@@ -150,7 +154,7 @@ const styles = StyleSheet.create({
     backBtn: {
         fontSize: 16,
         fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.palette.primaryDark,
+        color: colors.purple,
     },
     scroll: {
         paddingHorizontal: Theme.spacing.md,
@@ -167,18 +171,18 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 24,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: colors.ink,
     },
     subtitle: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         textAlign: 'center',
         lineHeight: 20,
     },
     subtitleBold: {
         fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.colors.text.primary,
+        color: colors.ink,
     },
     emptyState: {
         padding: Theme.spacing.xl,
@@ -187,12 +191,12 @@ const styles = StyleSheet.create({
     emptyText: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         textAlign: 'center',
         lineHeight: 22,
     },
     comboCard: {
-        backgroundColor: Theme.colors.background.surface.light,
+        backgroundColor: colors.surface,
         borderRadius: Theme.radius.xl,
         padding: Theme.spacing.md,
         gap: Theme.spacing.sm,
@@ -207,18 +211,18 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: LIME,
+        backgroundColor: accent,
         textAlign: 'center',
         lineHeight: 32,
         fontSize: 16,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#111',
+        color: '#fff',
         flexShrink: 0,
     },
     comboName: {
         fontSize: 17,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: colors.ink,
         marginBottom: 4,
     },
     occasionBadge: {
@@ -245,27 +249,27 @@ const styles = StyleSheet.create({
         width: 5,
         height: 5,
         borderRadius: 2.5,
-        backgroundColor: LIME,
+        backgroundColor: accent,
         flexShrink: 0,
     },
     itemName: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
     },
     saveBtn: {
-        backgroundColor: LIME,
+        backgroundColor: accent,
         borderRadius: Theme.radius.lg,
         paddingVertical: 12,
         alignItems: 'center',
         marginTop: 4,
     },
     saveBtnSaved: {
-        backgroundColor: '#E8F5E9',
+        backgroundColor: colors.ink,
     },
     saveBtnText: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: '#111',
+        color: '#fff',
     },
 });
