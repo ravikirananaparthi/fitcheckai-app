@@ -6,10 +6,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 const LIME = Theme.palette.primary;
 const DARK = Theme.palette.surface.dark;
 
-export default function ActionButtons() {
+export default function ActionButtons({ onSelect }: { onSelect: (source: 'camera' | 'gallery') => void }) {
   return (
     <View style={styles.actionRow}>
-      <Pressable style={styles.btnDark} android_ripple={{ color: DARK }}>
+      <Pressable onPress={() => onSelect('camera')} style={styles.btnDark} android_ripple={{ color: DARK }}>
         <Ionicons
           name="camera-outline"
           size={18}
@@ -18,7 +18,7 @@ export default function ActionButtons() {
         />
         <Text style={styles.btnDarkText}>Take Photo</Text>
       </Pressable>
-      <Pressable style={styles.btnLime} android_ripple={{ color: LIME }}>
+      <Pressable onPress={() => onSelect('gallery')} style={styles.btnLime} android_ripple={{ color: LIME }}>
         <Ionicons
           name="arrow-up-outline"
           size={18}
