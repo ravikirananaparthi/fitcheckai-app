@@ -1,10 +1,12 @@
+import { fitCheckColors as colors } from '@/constants/fitcheck-colors';
+import { Image } from 'expo-image';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    ScrollView, ActivityIndicator, Alert, StatusBar, Image,
+    ScrollView, ActivityIndicator, Alert, StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Theme } from '@/constants/theme';
 import {
     getCalendarWeek,
@@ -14,7 +16,7 @@ import {
 } from '@/src/services/api/calendar.service';
 import type { CalendarEntry } from '@/src/types/calendar.types';
 
-const LIME = Theme.palette.primary;
+const accent = colors.purple;
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 function getMonday(date: Date): Date {
@@ -63,7 +65,7 @@ export function CalendarScreen({ onBack }: Props) {
         }
     }, [weekStart]);
 
-    useEffect(() => { loadWeek(); }, [weekStart]);
+    useEffect(() => { void loadWeek(); }, [loadWeek]);
 
     const goToPrevWeek = () => setWeekStart(addDays(weekStart, -7));
     const goToNextWeek = () => setWeekStart(addDays(weekStart, 7));
@@ -178,7 +180,7 @@ export function CalendarScreen({ onBack }: Props) {
             {/* Calendar body */}
             {loading ? (
                 <View style={styles.center}>
-                    <ActivityIndicator size="large" color={LIME} />
+                    <ActivityIndicator size="large" color={accent} />
                 </View>
             ) : (
                 <ScrollView
@@ -227,7 +229,7 @@ export function CalendarScreen({ onBack }: Props) {
                                                         <Image
                                                             source={{ uri: firstItem.thumbnailUrl }}
                                                             style={styles.outfitThumb}
-                                                            resizeMode="cover"
+                                                            contentFit="cover"
                                                         />
                                                     )}
                                                     <View style={styles.outfitInfo}>
@@ -267,7 +269,7 @@ export function CalendarScreen({ onBack }: Props) {
                 activeOpacity={0.9}
             >
                 {aiLoading ? (
-                    <ActivityIndicator size="small" color="#111" />
+                    <ActivityIndicator size="small" color="#fff" />
                 ) : (
                     <Text style={styles.fabText}>✨ AI Fill Week</Text>
                 )}
@@ -277,22 +279,22 @@ export function CalendarScreen({ onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: Theme.colors.background.light },
+    root: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center', backgroundColor: Theme.colors.background.light },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     topBar: {
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         paddingHorizontal: Theme.spacing.md, paddingVertical: Theme.spacing.sm,
     },
-    backBtn: { fontSize: 16, fontFamily: 'GoogleSansFlex_600SemiBold', color: Theme.palette.primaryDark },
-    todayBtn: { fontSize: 14, fontFamily: 'GoogleSansFlex_600SemiBold', color: LIME },
+    backBtn: { fontSize: 16, fontFamily: 'GoogleSansFlex_600SemiBold', color: colors.purple },
+    todayBtn: { fontSize: 14, fontFamily: 'GoogleSansFlex_600SemiBold', color: accent },
 
     // Week nav
     weekNav: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         gap: Theme.spacing.lg, paddingVertical: Theme.spacing.xs,
     },
-    navArrow: { fontSize: 28, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.secondary, lineHeight: 32 },
-    weekLabel: { fontSize: 17, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary, minWidth: 160, textAlign: 'center' },
+    navArrow: { fontSize: 28, fontFamily: 'GoogleSansFlex_700Bold', color: colors.secondary, lineHeight: 32 },
+    weekLabel: { fontSize: 17, fontFamily: 'GoogleSansFlex_700Bold', color: colors.ink, minWidth: 160, textAlign: 'center' },
 
     // Day headers
     dayHeaders: {
@@ -300,12 +302,12 @@ const styles = StyleSheet.create({
         paddingVertical: Theme.spacing.sm, gap: 4,
     },
     dayHeader: { flex: 1, alignItems: 'center', gap: 4 },
-    dayName: { fontSize: 11, fontFamily: 'GoogleSansFlex_600SemiBold', color: Theme.colors.text.secondary, textTransform: 'uppercase' },
-    dayNameToday: { color: Theme.palette.primaryDark },
+    dayName: { fontSize: 11, fontFamily: 'GoogleSansFlex_600SemiBold', color: colors.secondary, textTransform: 'uppercase' },
+    dayNameToday: { color: colors.purple },
     dayNumCircle: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-    dayNumCircleToday: { backgroundColor: LIME },
-    dayNum: { fontSize: 13, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    dayNumToday: { color: '#111' },
+    dayNumCircleToday: { backgroundColor: accent },
+    dayNum: { fontSize: 13, fontFamily: 'GoogleSansFlex_700Bold', color: colors.ink },
+    dayNumToday: { color: '#fff' },
 
     // Scroll body
     scroll: { paddingHorizontal: Theme.spacing.md, gap: 6 },
@@ -313,16 +315,16 @@ const styles = StyleSheet.create({
     // Day rows
     dayRow: {
         flexDirection: 'row', minHeight: 72,
-        backgroundColor: Theme.colors.background.surface.light,
+        backgroundColor: colors.surface,
         borderRadius: Theme.radius.lg, padding: 10, gap: 12,
         borderLeftWidth: 3, borderLeftColor: 'transparent',
     },
-    dayRowToday: { borderLeftColor: LIME, backgroundColor: '#FCFFF5' },
+    dayRowToday: { borderLeftColor: accent, backgroundColor: colors.tint },
     dayLabel: { width: 36, alignItems: 'center', gap: 2, paddingTop: 2 },
-    dayRowName: { fontSize: 10, fontFamily: 'GoogleSansFlex_600SemiBold', color: Theme.colors.text.secondary, textTransform: 'uppercase' },
-    dayRowNameToday: { color: Theme.palette.primaryDark },
-    dayRowDate: { fontSize: 16, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    dayRowDateToday: { color: Theme.palette.primaryDark },
+    dayRowName: { fontSize: 10, fontFamily: 'GoogleSansFlex_600SemiBold', color: colors.secondary, textTransform: 'uppercase' },
+    dayRowNameToday: { color: colors.purple },
+    dayRowDate: { fontSize: 16, fontFamily: 'GoogleSansFlex_700Bold', color: colors.ink },
+    dayRowDateToday: { color: colors.purple },
     dayContent: { flex: 1, gap: 6, justifyContent: 'center' },
     emptyDay: { fontSize: 13, fontFamily: 'GoogleSansFlex_400Regular', color: '#C0C0C0', fontStyle: 'italic' },
 
@@ -333,24 +335,24 @@ const styles = StyleSheet.create({
         padding: 8, borderWidth: 1.5, borderColor: 'transparent',
     },
     outfitTileRepeated: { borderColor: '#FF9800' },
-    outfitThumb: { width: 40, height: 50, borderRadius: Theme.radius.sm, backgroundColor: Theme.colors.border },
+    outfitThumb: { width: 40, height: 50, borderRadius: Theme.radius.sm, backgroundColor: colors.border },
     outfitInfo: { flex: 1, gap: 2 },
-    outfitName: { fontSize: 13, fontFamily: 'GoogleSansFlex_600SemiBold', color: Theme.colors.text.primary },
-    eventName: { fontSize: 11, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary },
+    outfitName: { fontSize: 13, fontFamily: 'GoogleSansFlex_600SemiBold', color: colors.ink },
+    eventName: { fontSize: 11, fontFamily: 'GoogleSansFlex_400Regular', color: colors.secondary },
     repeatBadge: { backgroundColor: '#FFF3E0', borderRadius: Theme.radius.full, paddingHorizontal: 8, paddingVertical: 3 },
     repeatText: { fontSize: 10, fontFamily: 'GoogleSansFlex_700Bold', color: '#E65100' },
 
     hint: {
         fontSize: 12, fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary, textAlign: 'center', marginTop: Theme.spacing.sm,
+        color: colors.secondary, textAlign: 'center', marginTop: Theme.spacing.sm,
     },
 
     // FAB
     fab: {
         position: 'absolute', left: Theme.spacing.md, right: Theme.spacing.md,
-        backgroundColor: LIME, borderRadius: Theme.radius.xl,
+        backgroundColor: accent, borderRadius: Theme.radius.xl,
         paddingVertical: 15, alignItems: 'center',
         ...Theme.shadows.md,
     },
-    fabText: { fontSize: 15, fontFamily: 'GoogleSansFlex_700Bold', color: '#111' },
+    fabText: { fontSize: 15, fontFamily: 'GoogleSansFlex_700Bold', color: '#fff' },
 });
