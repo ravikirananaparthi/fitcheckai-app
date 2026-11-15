@@ -29,6 +29,12 @@
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow FitCheck AI to use your approximate location for weather-based outfit advice."
+        }
+      ],
       "@rnrepo/expo-config-plugin",
       [
         "expo-splash-screen",
