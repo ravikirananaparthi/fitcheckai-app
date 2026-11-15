@@ -1,7 +1,11 @@
+import { fitCheckColors as colors } from '@/constants/fitcheck-colors';
+import { FlashList } from '@shopify/flash-list';
+import { Layers } from 'lucide-react-native';
+import { Image } from 'expo-image';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Image, FlatList, ActivityIndicator, Alert, StatusBar,
+    ActivityIndicator, Alert, StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
@@ -9,7 +13,7 @@ import { Theme } from '@/constants/theme';
 import { getOutfits, deleteOutfit } from '@/src/services/api/outfits.service';
 import type { Outfit, ClothingItem } from '@/src/types/wardrobe.types';
 
-const LIME = Theme.palette.primary;
+const accent = colors.purple;
 
 interface Props {
     allItems: ClothingItem[];
@@ -19,7 +23,7 @@ interface Props {
 export function SavedOutfitsScreen({ allItems, onBack }: Props) {
     const insets = useSafeAreaInsets();
     const [outfits, setOutfits] = useState<Outfit[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const load = useCallback(async () => {
         try {
@@ -35,7 +39,7 @@ export function SavedOutfitsScreen({ allItems, onBack }: Props) {
 
     useEffect(() => {
         load();
-    }, []);
+    }, [load]);
 
     const handleDelete = useCallback((outfit: Outfit) => {
         Alert.alert('Delete outfit?', `"${outfit.name}" will be permanently deleted.`, [
@@ -61,30 +65,30 @@ export function SavedOutfitsScreen({ allItems, onBack }: Props) {
 
             {/* Top bar */}
             <View style={styles.topBar}>
-                <TouchableOpacity onPress={onBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                <TouchableOpacity accessibilityRole="button" onPress={onBack} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                     <Text style={styles.backBtn}>← Wardrobe</Text>
                 </TouchableOpacity>
             </View>
 
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Saved Outfits</Text>
+                <Text accessibilityRole="header" style={styles.headerTitle}>Saved outfits</Text>
                 <Text style={styles.headerSub}>{outfits.length} outfit{outfits.length !== 1 ? 's' : ''}</Text>
             </View>
 
             {loading ? (
                 <View style={styles.loadingCenter}>
-                    <ActivityIndicator size="large" color={LIME} />
+                    <ActivityIndicator size="large" color={accent} />
                 </View>
             ) : outfits.length === 0 ? (
                 <Animated.View entering={FadeIn} style={styles.emptyState}>
-                    <Text style={styles.emptyEmoji}>👔</Text>
+                    <View style={styles.emptyIcon}><Layers size={24} color={colors.purple} /></View>
                     <Text style={styles.emptyTitle}>No saved outfits yet</Text>
                     <Text style={styles.emptySub}>
-                        Use the Outfit Builder to create AI-suggested looks or save combos from item detail.
+                        Save a look from the outfit builder or from a piece’s outfit suggestions.
                     </Text>
                 </Animated.View>
             ) : (
-                <FlatList
+                <FlashList
                     data={outfits}
                     keyExtractor={(o) => o.id}
                     contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + 100 }]}
@@ -116,12 +120,10 @@ function OutfitCard({
     onDelete: () => void;
 }) {
     // Get items from outfit.items (populated from backend) or match from allItems
-    const itemsToShow =
-        outfit.items?.length > 0
-            ? outfit.items.map((oi) => oi.clothingItem).filter(Boolean)
-            : outfit.items?.map((oi) =>
-                  allItems.find((a) => a.id === (oi.clothingItem as any)?.id ?? oi)
-              ).filter(Boolean) ?? [];
+    const itemsToShow = (outfit.items ?? []).flatMap(({ clothingItem }) => {
+        const item = allItems.find((piece) => piece.id === clothingItem?.id) ?? clothingItem;
+        return item ? [item] : [];
+    });
 
     const lastWorn =
         outfit.wornDates?.length > 0
@@ -163,7 +165,7 @@ function OutfitCard({
                             key={i}
                             source={{ uri: (item as ClothingItem).thumbnailUrl ?? (item as ClothingItem).imageUrl }}
                             style={styles.outfitThumb}
-                            resizeMode="cover"
+                            contentFit="cover"
                         />
                     ))}
                     {itemsToShow.length > 5 && (
@@ -185,6 +187,9 @@ const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: Theme.colors.background.light,
+        width: '100%',
+        maxWidth: 720,
+        alignSelf: 'center',
     },
     topBar: {
         paddingHorizontal: Theme.spacing.md,
@@ -193,7 +198,7 @@ const styles = StyleSheet.create({
     backBtn: {
         fontSize: 16,
         fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.palette.primaryDark,
+        color: colors.purple,
     },
     header: {
         paddingHorizontal: Theme.spacing.md,
@@ -202,12 +207,12 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 28,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: colors.ink,
     },
     headerSub: {
         fontSize: 13,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         marginTop: 2,
     },
     loadingCenter: {
@@ -222,16 +227,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: Theme.spacing.xl,
         gap: Theme.spacing.sm,
     },
-    emptyEmoji: { fontSize: 56 },
+    emptyIcon: { width: 50, height: 50, borderRadius: 15, backgroundColor: colors.tint, alignItems: 'center', justifyContent: 'center' },
     emptyTitle: {
         fontSize: 20,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: colors.ink,
     },
     emptySub: {
         fontSize: 14,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         textAlign: 'center',
         lineHeight: 22,
     },
@@ -240,7 +245,7 @@ const styles = StyleSheet.create({
         gap: Theme.spacing.md,
     },
     outfitCard: {
-        backgroundColor: Theme.colors.background.surface.light,
+        backgroundColor: colors.surface,
         borderRadius: Theme.radius.xl,
         padding: Theme.spacing.md,
         gap: Theme.spacing.sm,
@@ -254,7 +259,7 @@ const styles = StyleSheet.create({
     outfitName: {
         fontSize: 17,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.primary,
+        color: colors.ink,
     },
     outfitMeta: {
         flexDirection: 'row',
@@ -264,23 +269,23 @@ const styles = StyleSheet.create({
         marginTop: 4,
     },
     occasionChip: {
-        backgroundColor: '#F5FFE0',
+        backgroundColor: colors.tint,
         borderRadius: Theme.radius.full,
         paddingHorizontal: 10,
         paddingVertical: 4,
         borderWidth: 1,
-        borderColor: LIME,
+        borderColor: accent,
     },
     occasionChipText: {
         fontSize: 12,
         fontFamily: 'GoogleSansFlex_600SemiBold',
-        color: Theme.palette.primaryDark,
+        color: colors.purple,
         textTransform: 'capitalize',
     },
     wornText: {
         fontSize: 12,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
     },
     deleteBtn: {
         fontSize: 18,
@@ -294,22 +299,22 @@ const styles = StyleSheet.create({
         width: 56,
         height: 70,
         borderRadius: Theme.radius.md,
-        backgroundColor: Theme.colors.border,
+        backgroundColor: colors.border,
     },
     moreBadge: {
-        backgroundColor: '#F0F0F0',
+        backgroundColor: colors.tint,
         alignItems: 'center',
         justifyContent: 'center',
     },
     moreText: {
         fontSize: 12,
         fontFamily: 'GoogleSansFlex_700Bold',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
     },
     outfitNotes: {
         fontSize: 13,
         fontFamily: 'GoogleSansFlex_400Regular',
-        color: Theme.colors.text.secondary,
+        color: colors.secondary,
         lineHeight: 18,
     },
 });
