@@ -1,3 +1,4 @@
+import { FitCheckLogo } from '@/src/components/branding/FitCheckLogo';
 import { Theme } from '@/constants/theme';
 import { House, Shirt, Sparkles, UserRound } from 'lucide-react-native';
 import { usePathname } from 'expo-router';
@@ -25,7 +26,7 @@ export default function WebTabLayout() {
           style={[styles.tabSlot, compact ? styles.tabSlotCompact : styles.tabSlotWide]}
         />
         <TabList style={[styles.tabList, compact ? styles.tabListCompact : styles.tabListWide]}>
-          {!compact && <View style={styles.brandBlock}><View style={styles.brandMark}><Text style={styles.brandMarkText}>F</Text></View><View><Text style={styles.brand}>FITCHECK</Text><Text style={styles.brandSub}>YOUR STYLE, REIMAGINED</Text></View></View>}
+          {!compact && <View style={styles.brandBlock}><FitCheckLogo /></View>}
           {tabs.map((tab) => {
             const selected = pathname === tab.href;
             const color = selected ? Theme.palette.primaryDark : Theme.colors.text.secondary;
@@ -64,11 +65,7 @@ const styles = StyleSheet.create({
   tabList: { position: 'absolute', backgroundColor: Theme.colors.background.surface.light },
   tabListWide: { top: 0, bottom: 0, left: 0, width: 240, flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', paddingHorizontal: 18, paddingVertical: 32, gap: 8, borderRightWidth: 1, borderRightColor: '#E9E5ED' },
   tabListCompact: { right: 0, bottom: 0, left: 0, flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: 8, paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#E9E5ED' },
-  brandBlock: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 42, paddingHorizontal: 8 },
-  brandMark: { width: 36, height: 36, borderRadius: 11, backgroundColor: '#29202F', alignItems: 'center', justifyContent: 'center' },
-  brandMarkText: { color: '#FFF', fontFamily: 'GoogleSansFlex_700Bold', fontSize: 20 },
-  brand: { color: '#211A29', fontFamily: 'GoogleSansFlex_700Bold', fontSize: 15, letterSpacing: 1 },
-  brandSub: { color: '#99909D', fontFamily: 'GoogleSansFlex_600SemiBold', fontSize: 8, letterSpacing: 0.8, marginTop: 2 },
+  brandBlock: { marginBottom: 42, paddingHorizontal: 8 },
   tab: { alignItems: 'center', gap: 10, borderRadius: 12 },
   tabWide: { flexDirection: 'row', minHeight: 48, paddingHorizontal: 14 },
   tabCompact: { flex: 1, minHeight: 48, justifyContent: 'center' },
