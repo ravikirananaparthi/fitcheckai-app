@@ -1,3 +1,1 @@
-import AIStylistScreen from '@/src/screens/fitcheck/AIStylistScreen';
-
-export default AIStylistScreen;
+export { default } from '@/src/screens/stylist/StylistChatScreen';
