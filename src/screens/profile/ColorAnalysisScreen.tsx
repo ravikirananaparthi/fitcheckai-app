@@ -1,7 +1,9 @@
+import { fitCheckColors as colors } from '@/constants/fitcheck-colors';
+import { Image } from 'expo-image';
 import React, { useState, useCallback } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity,
-    Image, ActivityIndicator, Alert, StatusBar, ScrollView,
+    ActivityIndicator, Alert, StatusBar, ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -10,7 +12,7 @@ import { Theme } from '@/constants/theme';
 import { analyzeColorPalette } from '@/src/services/api/profile.service';
 import type { ColorSeason } from '@/src/types/profile.types';
 
-const LIME = Theme.palette.primary;
+const accent = colors.purple;
 
 const SEASON_DATA: Record<string, { emoji: string; label: string; colors: string[]; desc: string; tips: string[] }> = {
     SPRING: {
@@ -99,10 +101,10 @@ export function ColorAnalysisScreen({ currentSeason, onBack }: Props) {
             {/* Analyzing state */}
             {state.step === 'analyzing' && (
                 <Animated.View entering={FadeIn} style={[styles.center, { flex: 1 }]}>
-                    <Image source={{ uri: state.imageUri }} style={styles.analyzePreview} resizeMode="cover" />
-                    <ActivityIndicator size="large" color={LIME} style={{ marginTop: 24 }} />
+                    <Image source={{ uri: state.imageUri }} style={styles.analyzePreview} contentFit="cover" />
+                    <ActivityIndicator size="large" color={accent} style={{ marginTop: 24 }} />
                     <Text style={styles.analyzeTitle}>Analyzing your colors...</Text>
-                    <Text style={styles.analyzeSub}>Gemini is examining your skin tone, hair, and eye color.</Text>
+                    <Text style={styles.analyzeSub}>FitCheck is analyzing your skin tone, hair, and eye color.</Text>
                 </Animated.View>
             )}
 
@@ -114,7 +116,7 @@ export function ColorAnalysisScreen({ currentSeason, onBack }: Props) {
                 >
                     <Animated.View entering={FadeIn} style={styles.resultHeader}>
                         <Text style={styles.resultEmoji}>{seasonInfo.emoji}</Text>
-                        <Text style={styles.resultTitle}>You're a {seasonInfo.label}</Text>
+                        <Text style={styles.resultTitle}>You’re a {seasonInfo.label}</Text>
                         <Text style={styles.resultDesc}>{seasonInfo.desc}</Text>
                     </Animated.View>
 
@@ -187,54 +189,54 @@ export function ColorAnalysisScreen({ currentSeason, onBack }: Props) {
 }
 
 const styles = StyleSheet.create({
-    root: { flex: 1, backgroundColor: Theme.colors.background.light },
+    root: { flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center', backgroundColor: Theme.colors.background.light },
     center: { alignItems: 'center', justifyContent: 'center', gap: Theme.spacing.sm },
     topBar: { paddingHorizontal: Theme.spacing.md, paddingVertical: Theme.spacing.sm },
-    backBtn: { fontSize: 16, fontFamily: 'GoogleSansFlex_600SemiBold', color: Theme.palette.primaryDark },
+    backBtn: { fontSize: 16, fontFamily: 'GoogleSansFlex_600SemiBold', color: colors.purple },
     scroll: { paddingHorizontal: Theme.spacing.md, gap: Theme.spacing.md },
 
     // Analyzing
-    analyzePreview: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: LIME },
-    analyzeTitle: { fontSize: 18, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary, marginTop: 8 },
-    analyzeSub: { fontSize: 14, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary, textAlign: 'center', paddingHorizontal: 32 },
+    analyzePreview: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: accent },
+    analyzeTitle: { fontSize: 18, fontFamily: 'GoogleSansFlex_700Bold', color: colors.ink, marginTop: 8 },
+    analyzeSub: { fontSize: 14, fontFamily: 'GoogleSansFlex_400Regular', color: colors.secondary, textAlign: 'center', paddingHorizontal: 32 },
 
     // Result
     resultHeader: { alignItems: 'center', paddingVertical: Theme.spacing.lg, gap: 8 },
     resultEmoji: { fontSize: 56 },
-    resultTitle: { fontSize: 26, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    resultDesc: { fontSize: 14, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary, textAlign: 'center', lineHeight: 22, paddingHorizontal: 8 },
+    resultTitle: { fontSize: 26, fontFamily: 'GoogleSansFlex_700Bold', color: colors.ink },
+    resultDesc: { fontSize: 14, fontFamily: 'GoogleSansFlex_400Regular', color: colors.secondary, textAlign: 'center', lineHeight: 22, paddingHorizontal: 8 },
 
     swatchCard: {
-        backgroundColor: Theme.colors.background.surface.light,
+        backgroundColor: colors.surface,
         borderRadius: Theme.radius.xl, padding: Theme.spacing.md, gap: Theme.spacing.sm,
         ...Theme.shadows.sm,
     },
-    cardTitle: { fontSize: 14, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.secondary, letterSpacing: 0.5, textTransform: 'uppercase' },
+    cardTitle: { fontSize: 14, fontFamily: 'GoogleSansFlex_700Bold', color: colors.secondary, letterSpacing: 0.5, textTransform: 'uppercase' },
     swatchGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     swatch: { width: 48, height: 48, borderRadius: 14, borderWidth: 1, borderColor: '#00000010' },
 
     tipsCard: {
-        backgroundColor: Theme.colors.background.surface.light,
+        backgroundColor: colors.surface,
         borderRadius: Theme.radius.xl, padding: Theme.spacing.md, gap: 10,
         ...Theme.shadows.sm,
     },
     tipRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     tipDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-    tipText: { fontSize: 14, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.primary, lineHeight: 20 },
+    tipText: { fontSize: 14, fontFamily: 'GoogleSansFlex_400Regular', color: colors.ink, lineHeight: 20 },
 
     reanalyzeBtn: {
-        borderWidth: 1.5, borderColor: LIME, borderRadius: Theme.radius.xl,
+        borderWidth: 1.5, borderColor: accent, borderRadius: Theme.radius.xl,
         paddingVertical: 14, alignItems: 'center',
     },
-    reanalyzeBtnText: { fontSize: 15, fontFamily: 'GoogleSansFlex_600SemiBold', color: Theme.palette.primaryDark },
+    reanalyzeBtnText: { fontSize: 15, fontFamily: 'GoogleSansFlex_600SemiBold', color: colors.purple },
 
     // Idle
     idleEmoji: { fontSize: 64 },
-    idleTitle: { fontSize: 24, fontFamily: 'GoogleSansFlex_700Bold', color: Theme.colors.text.primary },
-    idleSub: { fontSize: 15, fontFamily: 'GoogleSansFlex_400Regular', color: Theme.colors.text.secondary, textAlign: 'center', lineHeight: 22 },
+    idleTitle: { fontSize: 24, fontFamily: 'GoogleSansFlex_700Bold', color: colors.ink },
+    idleSub: { fontSize: 15, fontFamily: 'GoogleSansFlex_400Regular', color: colors.secondary, textAlign: 'center', lineHeight: 22 },
     idleBtns: { marginTop: Theme.spacing.md, gap: Theme.spacing.sm, width: '100%' },
-    primaryBtn: { backgroundColor: LIME, borderRadius: Theme.radius.xl, paddingVertical: 16, alignItems: 'center', ...Theme.shadows.sm },
-    primaryBtnText: { fontSize: 16, fontFamily: 'GoogleSansFlex_700Bold', color: '#111' },
-    secondaryBtn: { borderWidth: 1.5, borderColor: LIME, borderRadius: Theme.radius.xl, paddingVertical: 15, alignItems: 'center' },
-    secondaryBtnText: { fontSize: 16, fontFamily: 'GoogleSansFlex_600SemiBold', color: Theme.palette.primaryDark },
+    primaryBtn: { backgroundColor: accent, borderRadius: Theme.radius.xl, paddingVertical: 16, alignItems: 'center', ...Theme.shadows.sm },
+    primaryBtnText: { fontSize: 16, fontFamily: 'GoogleSansFlex_700Bold', color: '#fff' },
+    secondaryBtn: { borderWidth: 1.5, borderColor: accent, borderRadius: Theme.radius.xl, paddingVertical: 15, alignItems: 'center' },
+    secondaryBtnText: { fontSize: 16, fontFamily: 'GoogleSansFlex_600SemiBold', color: colors.purple },
 });
